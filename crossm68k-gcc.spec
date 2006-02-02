@@ -64,6 +64,7 @@ TEXCONFIG=false \
 	--disable-shared \
 	--disable-threads \
 	--enable-languages="c" \
+	--enable-target-optspace \
 	--with-gnu-as \
 	--with-gnu-ld \
 	--with-system-zlib \
