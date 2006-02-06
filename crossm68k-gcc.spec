@@ -5,28 +5,32 @@ Summary(pl):	Skro¶ne narzêdzia programistyczne GNU dla m68k - gcc
 Summary(pt_BR):	Utilitários para desenvolvimento de binários da GNU - m68k gcc
 Summary(tr):	GNU geliþtirme araçlarý - m68k gcc
 Name:		crossm68k-gcc
-Version:	3.3.6
+Version:	2.95.3
 Release:	1
 Epoch:		1
 License:	GPL
 Group:		Development/Languages
 Source0:	ftp://gcc.gnu.org/pub/gcc/releases/gcc-%{version}/gcc-%{version}.tar.bz2
-# Source0-md5:	6936616a967da5a0b46f1e7424a06414
+# Source0-md5:	87ee083a830683e2aaa57463940a0c3c
+Patch0:		%{name}-full.patch
+Patch1:		%{name}-sigset.patch
+Patch2:		%{name}-zext.patch
+Patch3:		%{name}-build.patch
 BuildRequires:	/bin/bash
 BuildRequires:	autoconf
 BuildRequires:	bison
 BuildRequires:	crossm68k-binutils
+BuildRequires:	crossm68k-uClibc
 BuildRequires:	flex
 Requires:	crossm68k-binutils
-ExcludeArch:	m68k m68kv9
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
-%define		target		m68k-pld-linux
+%define		target		m68k-elf
 %define		arch		%{_prefix}/%{target}
 %define		gccarch		%{_libdir}/gcc-lib/%{target}
 %define		gcclib		%{_libdir}/gcc-lib/%{target}/%{version}
 
-%define		_noautostrip	.*%{gcclib}/libgcc\\.a
+%define		_noautostrip	.*%{gcclib}/.*libgcc\\.a
 
 %description
 This package contains a cross-gcc which allows the creation of
@@ -39,21 +43,27 @@ anderem Rechner Code für m68k-Linux zu generieren.
 
 %description -l pl
 Ten pakiet zawiera skro¶ny gcc pozwalaj±cy na robienie na innych
-maszynach binariów do uruchamiania na m68k (architektura
-"m68k-linux").
+maszynach binariów do uruchamiania na m68k.
 
 %prep
 %setup -q -n gcc-%{version}
+%patch0 -p1
+%patch1 -p1
+%patch2 -p1
+%patch3 -p1
 
 %build
-cp -f /usr/share/automake/config.sub .
-rm -rf obj-%{target}
-install -d obj-%{target}
-cd obj-%{target}
+cd gcc
+%{__autoconf}
+cp -f /usr/share/automake/config.* .
+cd ..
+cp -f /usr/share/automake/config.* .
 
-CFLAGS="%{rpmcflags}" \
-CXXFLAGS="%{rpmcflags}" \
-TEXCONFIG=false \
+rm -rf obj-%{target}
+install -d obj-%{target} && cd obj-%{target}
+
+# Bug: CFLAGS is used to target ...
+CFLAGS='-Os -Dlinux -D__linux__ -Dunix' \
 ../configure \
 	--prefix=%{_prefix} \
 	--infodir=%{_infodir} \
@@ -63,49 +73,54 @@ TEXCONFIG=false \
 	--libexecdir=%{_libdir} \
 	--disable-shared \
 	--disable-threads \
-	--enable-languages="c" \
 	--enable-target-optspace \
+	--enable-languages=c \
+	--enable-multilib \
 	--with-gnu-as \
 	--with-gnu-ld \
-	--with-system-zlib \
-	--with-multilib \
-	--with-newlib \
-	--without-headers \
-	--without-x \
 	--target=%{target} \
 	--host=%{_target_platform} \
 	--build=%{_target_platform}
 
-%{__make}
+cd ..
+%{__make} -C obj-%{target}
 
 %install
 rm -rf $RPM_BUILD_ROOT
 
 %{__make} -C obj-%{target} install \
-	DESTDIR=$RPM_BUILD_ROOT
-
+        prefix=$RPM_BUILD_ROOT%{_prefix} \
+	bindir=$RPM_BUILD_ROOT%{_bindir} \
+        libdir=$RPM_BUILD_ROOT%{_libdir} \
+	mandir=$RPM_BUILD_ROOT%{_mandir} \
+	infodir=$RPM_BUILD_ROOT%{_infodir}
+			
 # don't want this here
 rm -f $RPM_BUILD_ROOT%{_libdir}/libiberty.a
+rm -rf $RPM_BUILD_ROOT%{gcclib}/include/{README,asm,linux}
 
 %if 0%{!?debug:1}
-%{target}-strip -g $RPM_BUILD_ROOT%{gcclib}/libgcc.a
+%{target}-strip --strip-debug					\
+			$RPM_BUILD_ROOT%{gcclib}/*.o		\
+			$RPM_BUILD_ROOT%{gcclib}/libgcc.a	\
+			$RPM_BUILD_ROOT%{gcclib}/*/libgcc.a	\
+			$RPM_BUILD_ROOT%{gcclib}/*/*/libgcc.a
 %endif
+
+mv $RPM_BUILD_ROOT%{_bindir}/cpp	$RPM_BUILD_ROOT%{_bindir}/%{target}-cpp
+mv $RPM_BUILD_ROOT%{_bindir}/gcov	$RPM_BUILD_ROOT%{_bindir}/%{target}-gcov
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_bindir}/%{target}-gcc*
-%attr(755,root,root) %{_bindir}/%{target}-gcov
-%attr(755,root,root) %{_bindir}/%{target}-cpp
-%dir %{gccarch}
-%dir %{gcclib}
+%attr(755,root,root) %{_bindir}/%{target}-*
+%attr(755,root,root) %{gcclib}/cpp0
 %attr(755,root,root) %{gcclib}/cc1
 %attr(755,root,root) %{gcclib}/collect2
-%{gcclib}/crt*.o
-%{gcclib}/libgcc.a
-%{gcclib}/specs*
-%dir %{gcclib}/include
-%{gcclib}/include/*.h
+%dir %{gccarch}
+%dir %{gcclib}
+%{gcclib}/[imSls]*
+%{gcclib}/crt*
 %{_mandir}/man1/%{target}-gcc.1*
