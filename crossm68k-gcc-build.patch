@@ -1,0 +1,25 @@
+diff -urN gcc-2.95.3.orig/gcc/Makefile.in gcc-2.95.3/gcc/Makefile.in
+--- gcc-2.95.3.orig/gcc/Makefile.in	2001-01-25 15:02:58.000000000 +0100
++++ gcc-2.95.3/gcc/Makefile.in	2006-02-03 20:30:57.000000000 +0100
+@@ -2178,13 +2178,14 @@
+ # exists.
+ # We deliberately use tooldir instead of gcc_tooldir here.  gcc_tooldir
+ # won't work because libsubdir doesn't exist yet.
+-	if [ "$(SYSTEM_HEADER_DIR)" = "$(tooldir)/sys-include" ] \
+-	   && [ -d $(tooldir)/sys-include ]; then \
+-	  if [ -d $(libdir) ] ; then true ; else mkdir $(libdir) ; fi; \
+-	  if [ -d $(libdir)/gcc-lib ] ; then true ; else mkdir $(libdir)/gcc-lib; fi; \
+-	  if [ -d $(libdir)/gcc-lib/$(target_alias) ] ; then true ; else mkdir $(libdir)/gcc-lib/$(target_alias) ; fi; \
+-	  if [ -d $(libdir)/gcc-lib/$(target_alias)/$(version) ] ; then true ; else mkdir $(libdir)/gcc-lib/$(target_alias)/$(version) ; fi; \
+-	else true; fi
++#
++#	if [ "$(SYSTEM_HEADER_DIR)" = "$(tooldir)/sys-include" ] \
++#	   && [ -d $(tooldir)/sys-include ]; then \
++#	  if [ -d $(libdir) ] ; then true ; else mkdir $(libdir) ; fi; \
++#	  if [ -d $(libdir)/gcc-lib ] ; then true ; else mkdir $(libdir)/gcc-lib; fi; \
++#	  if [ -d $(libdir)/gcc-lib/$(target_alias) ] ; then true ; else mkdir $(libdir)/gcc-lib/$(target_alias) ; fi; \
++#	  if [ -d $(libdir)/gcc-lib/$(target_alias)/$(version) ] ; then true ; else mkdir $(libdir)/gcc-lib/$(target_alias)/$(version) ; fi; \
++#	else true; fi
+ 
+ 	touch stmp-fixinc
+ 
