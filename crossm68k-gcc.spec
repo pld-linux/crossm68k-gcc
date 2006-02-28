@@ -94,7 +94,7 @@ rm -rf $RPM_BUILD_ROOT
         libdir=$RPM_BUILD_ROOT%{_libdir} \
 	mandir=$RPM_BUILD_ROOT%{_mandir} \
 	infodir=$RPM_BUILD_ROOT%{_infodir}
-			
+
 # don't want this here
 rm -f $RPM_BUILD_ROOT%{_libdir}/libiberty.a
 rm -rf $RPM_BUILD_ROOT%{gcclib}/include/{README,asm,linux}
