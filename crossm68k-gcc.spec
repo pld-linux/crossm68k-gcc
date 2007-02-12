@@ -1,9 +1,9 @@
 Summary:	Cross m68k GNU binary utility development utilities - gcc
-Summary(es.UTF-8):   Utilitarios para desarrollo de binarios de la GNU - m68k gcc
-Summary(fr.UTF-8):   Utilitaires de développement binaire de GNU - m68k gcc
-Summary(pl.UTF-8):   Skrośne narzędzia programistyczne GNU dla m68k - gcc
-Summary(pt_BR.UTF-8):   Utilitários para desenvolvimento de binários da GNU - m68k gcc
-Summary(tr.UTF-8):   GNU geliştirme araçları - m68k gcc
+Summary(es.UTF-8):	Utilitarios para desarrollo de binarios de la GNU - m68k gcc
+Summary(fr.UTF-8):	Utilitaires de développement binaire de GNU - m68k gcc
+Summary(pl.UTF-8):	Skrośne narzędzia programistyczne GNU dla m68k - gcc
+Summary(pt_BR.UTF-8):	Utilitários para desenvolvimento de binários da GNU - m68k gcc
+Summary(tr.UTF-8):	GNU geliştirme araçları - m68k gcc
 Name:		crossm68k-gcc
 Version:	2.95.3
 Release:	1
