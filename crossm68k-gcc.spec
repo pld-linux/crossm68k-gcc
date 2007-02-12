@@ -1,9 +1,9 @@
 Summary:	Cross m68k GNU binary utility development utilities - gcc
-Summary(es):	Utilitarios para desarrollo de binarios de la GNU - m68k gcc
-Summary(fr):	Utilitaires de développement binaire de GNU - m68k gcc
-Summary(pl):	Skro¶ne narzêdzia programistyczne GNU dla m68k - gcc
-Summary(pt_BR):	Utilitários para desenvolvimento de binários da GNU - m68k gcc
-Summary(tr):	GNU geliþtirme araçlarý - m68k gcc
+Summary(es.UTF-8):   Utilitarios para desarrollo de binarios de la GNU - m68k gcc
+Summary(fr.UTF-8):   Utilitaires de dÃ©veloppement binaire de GNU - m68k gcc
+Summary(pl.UTF-8):   SkroÅ›ne narzÄ™dzia programistyczne GNU dla m68k - gcc
+Summary(pt_BR.UTF-8):   UtilitÃ¡rios para desenvolvimento de binÃ¡rios da GNU - m68k gcc
+Summary(tr.UTF-8):   GNU geliÅŸtirme araÃ§larÄ± - m68k gcc
 Name:		crossm68k-gcc
 Version:	2.95.3
 Release:	1
@@ -37,13 +37,13 @@ This package contains a cross-gcc which allows the creation of
 binaries to be run on m68k linux (architecture m68k-linux) on other
 machines.
 
-%description -l de
-Dieses Paket enthält einen Cross-gcc, der es erlaubt, auf einem
-anderem Rechner Code für m68k-Linux zu generieren.
+%description -l de.UTF-8
+Dieses Paket enthÃ¤lt einen Cross-gcc, der es erlaubt, auf einem
+anderem Rechner Code fÃ¼r m68k-Linux zu generieren.
 
-%description -l pl
-Ten pakiet zawiera skro¶ny gcc pozwalaj±cy na robienie na innych
-maszynach binariów do uruchamiania na m68k.
+%description -l pl.UTF-8
+Ten pakiet zawiera skroÅ›ny gcc pozwalajÄ…cy na robienie na innych
+maszynach binariÃ³w do uruchamiania na m68k.
 
 %prep
 %setup -q -n gcc-%{version}
