@@ -1,0 +1,38 @@
+
+Don't use wchar related functions when _GLIBCPP_USE_WCHAR_T isn't defined.
+
+Patch by Bernardo Innocenti <bernie@develer.com>
+
+
+--- gcc-3.3.1-20030720.orig/libstdc++-v3/include/c_std/std_cstdlib.h	2003-04-18 12:08:05.000000000 +0200
++++ gcc-3.3.1-20030720/libstdc++-v3/include/c_std/std_cstdlib.h	2003-07-26 00:50:26.000000000 +0200
+@@ -99,23 +99,26 @@ namespace std 
+   using ::free;
+   using ::getenv;
+   using ::labs;
+   using ::ldiv;
+   using ::malloc;
+-  using ::mblen;
+-  using ::mbstowcs;
+-  using ::mbtowc;
+   using ::qsort;
+   using ::rand;
+   using ::realloc;
+   using ::srand;
+   using ::strtod;
+   using ::strtol;
+   using ::strtoul;
+   using ::system;
++
++#ifdef _GLIBCPP_USE_WCHAR_T
++  using ::mblen;
++  using ::mbstowcs;
++  using ::mbtowc;
+   using ::wcstombs;
+   using ::wctomb;
++#endif // _GLIBCPP_USE_WCHAR_T
+ 
+   inline long 
+   abs(long __i) { return labs(__i); }
+ 
+   inline ldiv_t

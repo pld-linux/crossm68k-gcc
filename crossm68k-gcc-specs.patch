@@ -1,0 +1,93 @@
+From: Bernardo Innocenti <bernie@develer.com>
+
+Adjusts the linker invocation for multilib targets built
+with -mid-shared-library.
+
+FIXME: this patch messes up the common m68k-elf target configuration.
+uClinux specific stuff ought to be moved to its own target (m68k-*-uclinux*).
+
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/m68020-elf.h gcc-3.3.1/gcc/config/m68k/m68020-elf.h
+--- gcc-3.3.1.orig/gcc/config/m68k/m68020-elf.h	2001-12-11 19:21:03.000000000 +0100
++++ gcc-3.3.1/gcc/config/m68k/m68020-elf.h	2003-07-25 17:52:20.000000000 +0200
+@@ -21,13 +21,46 @@
+ 
+ /* This comment is here to see if it will keep Sun's cpp from dying.  */
+ 
+-/* We need to override the default specs from elfos.h.  This suppresses the
+-   loading of crt0.o by gcc's default linker spec.  For embedded targets crt0
+-   now comes from the linker script.  */
+-
++/* Undo the empty definition of STARTFILE_SPEC from m68kemb.h so we'll
++   pick the default from gcc.c (just link crt0.o from multilib dir) */
+ #undef	STARTFILE_SPEC
+-#define STARTFILE_SPEC "crtbegin.o%s"
+ 
+-#define LIB_SPEC "-lc"
++/* Override the default LIB_SPEC from gcc.c.  We don't currently support
++   profiling, or libg.a.  */
++
++#undef LIB_SPEC
++#define LIB_SPEC "\
++%{mid-shared-library:-R libc.gdb%s -elf2flt -shared-lib-id 0} -lc \
++"
++
++/* we don't want a .eh_frame section */
++#define EH_FRAME_IN_DATA_SECTION
++
++/* ??? Quick hack to get constructors working.  Make this look more like a
++   COFF target, so the existing dejagnu/libgloss support works.  A better
++   solution would be to make the necessary dejagnu and libgloss changes so
++   that we can use normal the ELF constructor mechanism.  */
++#undef INIT_SECTION_ASM_OP
++#undef FINI_SECTION_ASM_OP
++#undef ENDFILE_SPEC
++#define ENDFILE_SPEC ""
++
++/* Bring in standard linux defines
++   FIXME: move in some separate header along with other uClinux stuff */
++#define TARGET_OS_CPP_BUILTINS()		\
++  do						\
++    {						\
++	builtin_define ("__uClinux__");		\
++	builtin_define_std ("linux");		\
++	builtin_define_std ("unix");		\
++	builtin_define ("__gnu_linux__");	\
++	builtin_assert ("system=posix");	\
++	if (flag_pic)				\
++	  {					\
++	    builtin_define ("__PIC__");		\
++	    builtin_define ("__pic__");		\
++	  }					\
++    }						\
++  while (0)
+
+ /* end of m68020-elf.h */
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/m68kemb.h gcc-3.3.1/gcc/config/m68k/m68kemb.h
+--- gcc-3.3.1.orig/gcc/config/m68k/m68kemb.h	2001-12-11 19:21:03.000000000 +0100
++++ gcc-3.3.1/gcc/config/m68k/m68kemb.h	2003-07-25 00:43:55.000000000 +0200
+@@ -48,8 +48,10 @@
+ /* Override the default LIB_SPEC from gcc.c.  We don't currently support
+    profiling, or libg.a.  */
+ 
+-#undef  LIB_SPEC
+-#define LIB_SPEC "-lc"
++#undef LIB_SPEC
++#define LIB_SPEC "\
++-lc \
++"
+ 
+ /* Make this be null, since we want the crt0.o to come from the linker
+    script */
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/t-m68kelf gcc-3.3.1/gcc/config/m68k/t-m68kelf
+--- gcc-3.3.1.orig/gcc/config/m68k/t-m68kelf	2003-07-25 00:35:34.000000000 +0200
++++ gcc-3.3.1/gcc/config/m68k/t-m68kelf	2003-07-25 00:43:55.000000000 +0200
+@@ -25,7 +25,5 @@
+ LIBGCC = stmp-multilib
+ INSTALL_LIBGCC = install-multilib
+ 
+-# from ../t-svr4
+-EXTRA_PARTS=crtbegin.o crtend.o
+-# no pic for now
+-#CRTSTUFF_T_CFLAGS=-fpic
++# We don't use crtbegin.o and crtend.o
++EXTRA_PARTS =

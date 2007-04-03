@@ -1,0 +1,3724 @@
+
+Rename the ColdFire target macro to TARGET_COLDFIRE instead of
+the less appropriate TARGET_5200.
+
+Add options for new ColdFire targets.
+
+(based on Peter Barada's CVS tree for ColdFire targets)
+
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/coff.h gcc-3.3.1/gcc/config/m68k/coff.h
+--- gcc-3.3.1.orig/gcc/config/m68k/coff.h	2003-01-28 23:18:15.000000000 +0100
++++ gcc-3.3.1/gcc/config/m68k/coff.h	2003-07-25 00:25:30.000000000 +0200
+@@ -57,7 +57,7 @@
+ 
+ #define ASM_RETURN_CASE_JUMP				\
+   do {							\
+-    if (TARGET_5200)					\
++    if (TARGET_COLDFIRE)				\
+       {							\
+ 	if (ADDRESS_REG_P (operands[0]))		\
+ 	  return "jmp %%pc@(2,%0:l)";			\
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/lb1sf68.asm gcc-3.3.1/gcc/config/m68k/lb1sf68.asm
+--- gcc-3.3.1.orig/gcc/config/m68k/lb1sf68.asm	2001-05-17 05:16:01.000000000 +0200
++++ gcc-3.3.1/gcc/config/m68k/lb1sf68.asm	2003-07-25 00:25:30.000000000 +0200
+@@ -214,7 +214,7 @@
+ | void __clear_sticky_bits(void);
+ SYM (__clear_sticky_bit):		
+ 	lea	SYM (_fpCCR),a0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	movew	IMM (0),a0@(STICK)
+ #else
+ 	clr.w	a0@(STICK)
+@@ -248,7 +248,7 @@
+ $_exception_handler:
+ 	lea	SYM (_fpCCR),a0
+ 	movew	d7,a0@(EBITS)	| set __exception_bits
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	orw	d7,a0@(STICK)	| and __sticky_bits
+ #else
+ 	movew	a0@(STICK),d4
+@@ -259,7 +259,7 @@
+ 	movew	d5,a0@(LASTO)	| and __last_operation
+ 
+ | Now put the operands in place:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (SINGLE_FLOAT),d6
+ #else
+ 	cmpl	IMM (SINGLE_FLOAT),d6
+@@ -274,7 +274,7 @@
+ 	movel	a6@(12),a0@(OPER2)
+ 2:
+ | And check whether the exception is trap-enabled:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	andw	a0@(TRAPE),d7	| is exception trap-enabled?
+ #else
+ 	clrl	d6
+@@ -284,7 +284,7 @@
+ 	beq	1f		| no, exit
+ 	pea	SYM (_fpCCR)	| yes, push address of _fpCCR
+ 	trap	IMM (FPTRAP)	| and trap
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 1:	moveml	sp@+,d2-d7	| restore data registers
+ #else
+ 1:	moveml	sp@,d2-d7
+@@ -304,7 +304,7 @@
+ 	muluw	sp@(10), d0	/* x0*y1 */
+ 	movew	sp@(6), d1	/* x1 -> d1 */
+ 	muluw	sp@(8), d1	/* x1*y0 */
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	addw	d1, d0
+ #else
+ 	addl	d1, d0
+@@ -323,7 +323,7 @@
+ 	.proc
+ 	.globl	SYM (__udivsi3)
+ SYM (__udivsi3):
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	movel	d2, sp@-
+ 	movel	sp@(12), d1	/* d1 = divisor */
+ 	movel	sp@(8), d0	/* d0 = dividend */
+@@ -368,7 +368,7 @@
+ L6:	movel	sp@+, d2
+ 	rts
+ 
+-#else /* __mcf5200__ */
++#else /* __mcoldfire__ */
+ 
+ /* Coldfire implementation of non-restoring division algorithm from
+    Hennessy & Patterson, Appendix A. */
+@@ -390,7 +390,7 @@
+ 	moveml	sp@,d2-d4	| restore data registers
+ 	unlk	a6		| and return
+ 	rts
+-#endif /* __mcf5200__ */
++#endif /* __mcoldfire__ */
+ 
+ #endif /* L_udivsi3 */
+ 
+@@ -405,7 +405,7 @@
+ 	movel	sp@(12), d1	/* d1 = divisor */
+ 	jpl	L1
+ 	negl	d1
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	negb	d2		/* change sign because divisor <0  */
+ #else
+ 	negl	d2		/* change sign because divisor <0  */
+@@ -413,7 +413,7 @@
+ L1:	movel	sp@(8), d0	/* d0 = dividend */
+ 	jpl	L2
+ 	negl	d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	negb	d2
+ #else
+ 	negl	d2
+@@ -444,7 +444,7 @@
+ 	jbsr	SYM (__udivsi3)
+ 	addql	IMM (8), sp
+ 	movel	sp@(8), d1	/* d1 = divisor */
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	movel	d1, sp@-
+ 	movel	d0, sp@-
+ 	jbsr	SYM (__mulsi3)	/* d0 = (a/b)*b */
+@@ -470,7 +470,7 @@
+ 	jbsr	SYM (__divsi3)
+ 	addql	IMM (8), sp
+ 	movel	sp@(8), d1	/* d1 = divisor */
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	movel	d1, sp@-
+ 	movel	d0, sp@-
+ 	jbsr	SYM (__mulsi3)	/* d0 = (a/b)*b */
+@@ -611,7 +611,7 @@
+ 
+ | double __adddf3(double, double);
+ SYM (__adddf3):
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	link	a6,IMM (0)	| everything will be done in registers
+ 	moveml	d2-d7,sp@-	| save all data registers and a2 (but d0-d1)
+ #else
+@@ -635,7 +635,7 @@
+ 
+ 	andl	IMM (0x80000000),d7 | isolate a's sign bit '
+         swap	d6		| and also b's sign bit '
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	andw	IMM (0x8000),d6	|
+ 	orw	d6,d7		| and combine them into d7, so that a's sign '
+ 				| bit is in the high word and b's is in the '
+@@ -662,7 +662,7 @@
+ 	orl	d7,d0		| and put hidden bit back
+ Ladddf$1:
+ 	swap	d4		| shift right exponent so that it starts
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (5),d4	| in bit 0 and not bit 20
+ #else
+ 	lsrl	IMM (5),d4	| in bit 0 and not bit 20
+@@ -678,7 +678,7 @@
+ 	orl	d7,d2		| and put hidden bit back
+ Ladddf$2:
+ 	swap	d5		| shift right exponent so that it starts
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (5),d5	| in bit 0 and not bit 20
+ #else
+ 	lsrl	IMM (5),d5	| in bit 0 and not bit 20
+@@ -693,7 +693,7 @@
+ | and d4-d5-d6-d7 for the second. To do this we store (temporarily) the
+ | exponents in a2-a3.
+ 
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	a2-a3,sp@-	| save the address registers
+ #else
+ 	movel	a2,sp@-	
+@@ -713,7 +713,7 @@
+ 
+ | Here we shift the numbers until the exponents are the same, and put 
+ | the largest exponent in a2.
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d4,a2		| get exponents back
+ 	exg	d5,a3		|
+ 	cmpw	d4,d5		| compare the exponents
+@@ -732,7 +732,7 @@
+ | Here we have a's exponent larger than b's, so we have to shift b. We do 
+ | this by using as counter d2:
+ 1:	movew	d4,d2		| move largest exponent to d2
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	d5,d2		| and subtract second exponent
+ 	exg	d4,a2		| get back the longs we saved
+ 	exg	d5,a3		|
+@@ -746,20 +746,20 @@
+ 	movel	a4,a3
+ #endif
+ | if difference is too large we don't shift (actually, we can just exit) '
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (DBL_MANT_DIG+2),d2
+ #else
+ 	cmpl	IMM (DBL_MANT_DIG+2),d2
+ #endif
+ 	bge	Ladddf$b$small
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (32),d2	| if difference >= 32, shift by longs
+ #else
+ 	cmpl	IMM (32),d2	| if difference >= 32, shift by longs
+ #endif
+ 	bge	5f
+ 2:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (16),d2	| if difference >= 16, shift by words	
+ #else
+ 	cmpl	IMM (16),d2	| if difference >= 16, shift by words	
+@@ -768,7 +768,7 @@
+ 	bra	3f		| enter dbra loop
+ 
+ 4:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d4
+ 	roxrl	IMM (1),d5
+ 	roxrl	IMM (1),d6
+@@ -789,7 +789,7 @@
+ 12:	lsrl	IMM (1),d4
+ #endif
+ 3:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	dbra	d2,4b
+ #else
+ 	subql	IMM (1),d2
+@@ -803,7 +803,7 @@
+ 	movel	d5,d6
+ 	movel	d4,d5
+ 	movel	IMM (0),d4
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (32),d2
+ #else
+ 	subl	IMM (32),d2
+@@ -818,7 +818,7 @@
+ 	swap	d5
+ 	movew	IMM (0),d4
+ 	swap	d4
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (16),d2
+ #else
+ 	subl	IMM (16),d2
+@@ -826,7 +826,7 @@
+ 	bra	3b
+ 	
+ 9:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d4,d5
+ 	movew	d4,d6
+ 	subw	d5,d6		| keep d5 (largest exponent) in d4
+@@ -845,20 +845,20 @@
+ 	movel	a4,a3
+ #endif
+ | if difference is too large we don't shift (actually, we can just exit) '
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (DBL_MANT_DIG+2),d6
+ #else
+ 	cmpl	IMM (DBL_MANT_DIG+2),d6
+ #endif
+ 	bge	Ladddf$a$small
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (32),d6	| if difference >= 32, shift by longs
+ #else
+ 	cmpl	IMM (32),d6	| if difference >= 32, shift by longs
+ #endif
+ 	bge	5f
+ 2:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (16),d6	| if difference >= 16, shift by words	
+ #else
+ 	cmpl	IMM (16),d6	| if difference >= 16, shift by words	
+@@ -867,7 +867,7 @@
+ 	bra	3f		| enter dbra loop
+ 
+ 4:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0
+ 	roxrl	IMM (1),d1
+ 	roxrl	IMM (1),d2
+@@ -888,7 +888,7 @@
+ 12:	lsrl	IMM (1),d0
+ #endif
+ 3:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	dbra	d6,4b
+ #else
+ 	subql	IMM (1),d6
+@@ -902,7 +902,7 @@
+ 	movel	d1,d2
+ 	movel	d0,d1
+ 	movel	IMM (0),d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (32),d6
+ #else
+ 	subl	IMM (32),d6
+@@ -917,14 +917,14 @@
+ 	swap	d1
+ 	movew	IMM (0),d0
+ 	swap	d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (16),d6
+ #else
+ 	subl	IMM (16),d6
+ #endif
+ 	bra	3b
+ Ladddf$3:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d4,a2	
+ 	exg	d5,a3
+ #else
+@@ -940,7 +940,7 @@
+ | the signs in a4.
+ 
+ | Here we have to decide whether to add or subtract the numbers:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d7,a0		| get the signs 
+ 	exg	d6,a3		| a3 is free to be used
+ #else
+@@ -958,7 +958,7 @@
+ 	eorl	d7,d6		| compare the signs
+ 	bmi	Lsubdf$0	| if the signs are different we have 
+ 				| to subtract
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d7,a0		| else we add the numbers
+ 	exg	d6,a3		|
+ #else
+@@ -978,7 +978,7 @@
+ 	movel	a0,d7		| 
+ 	andl	IMM (0x80000000),d7 | d7 now has the sign
+ 
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,a2-a3	
+ #else
+ 	movel	sp@+,a4	
+@@ -992,7 +992,7 @@
+ | one more bit we check this:
+ 	btst	IMM (DBL_MANT_DIG+1),d0	
+ 	beq	1f
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0
+ 	roxrl	IMM (1),d1
+ 	roxrl	IMM (1),d2
+@@ -1017,12 +1017,12 @@
+ 1:
+ 	lea	Ladddf$5,a0	| to return from rounding routine
+ 	lea	SYM (_fpCCR),a1	| check the rounding mode
+-#ifdef __mcf5200__
++#ifdef __mcoldfire__
+ 	clrl	d6
+ #endif
+ 	movew	a1@(6),d6	| rounding mode in d6
+ 	beq	Lround$to$nearest
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (ROUND_TO_PLUS),d6
+ #else
+ 	cmpl	IMM (ROUND_TO_PLUS),d6
+@@ -1032,20 +1032,20 @@
+ 	bra	Lround$to$plus
+ Ladddf$5:
+ | Put back the exponent and check for overflow
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (0x7ff),d4	| is the exponent big?
+ #else
+ 	cmpl	IMM (0x7ff),d4	| is the exponent big?
+ #endif
+ 	bge	1f
+ 	bclr	IMM (DBL_MANT_DIG-1),d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lslw	IMM (4),d4	| put exponent back into position
+ #else
+ 	lsll	IMM (4),d4	| put exponent back into position
+ #endif
+ 	swap	d0		| 
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	orw	d4,d0		|
+ #else
+ 	orl	d4,d0		|
+@@ -1058,7 +1058,7 @@
+ 
+ Lsubdf$0:
+ | Here we do the subtraction.
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d7,a0		| put sign back in a0
+ 	exg	d6,a3		|
+ #else
+@@ -1086,7 +1086,7 @@
+ 	movel	a2,d4		| return exponent to d4
+ 	movel	a0,d7
+ 	andl	IMM (0x80000000),d7 | isolate sign bit
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,a2-a3	|
+ #else
+ 	movel	sp@+,a4
+@@ -1100,7 +1100,7 @@
+ | one more bit we check this:
+ 	btst	IMM (DBL_MANT_DIG+1),d0	
+ 	beq	1f
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0
+ 	roxrl	IMM (1),d1
+ 	roxrl	IMM (1),d2
+@@ -1125,12 +1125,12 @@
+ 1:
+ 	lea	Lsubdf$1,a0	| to return from rounding routine
+ 	lea	SYM (_fpCCR),a1	| check the rounding mode
+-#ifdef __mcf5200__
++#ifdef __mcoldfire__
+ 	clrl	d6
+ #endif
+ 	movew	a1@(6),d6	| rounding mode in d6
+ 	beq	Lround$to$nearest
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (ROUND_TO_PLUS),d6
+ #else
+ 	cmpl	IMM (ROUND_TO_PLUS),d6
+@@ -1141,13 +1141,13 @@
+ Lsubdf$1:
+ | Put back the exponent and sign (we don't have overflow). '
+ 	bclr	IMM (DBL_MANT_DIG-1),d0	
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lslw	IMM (4),d4	| put exponent back into position
+ #else
+ 	lsll	IMM (4),d4	| put exponent back into position
+ #endif
+ 	swap	d0		| 
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	orw	d4,d0		|
+ #else
+ 	orl	d4,d0		|
+@@ -1159,7 +1159,7 @@
+ | DBL_MANT_DIG+1) we return the other (and now we don't have to '
+ | check for finiteness or zero).
+ Ladddf$a$small:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,a2-a3	
+ #else
+ 	movel	sp@+,a4
+@@ -1170,7 +1170,7 @@
+ 	movel	a6@(20),d1
+ 	lea	SYM (_fpCCR),a0
+ 	movew	IMM (0),a0@
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7	| restore data registers
+ #else
+ 	moveml	sp@,d2-d7
+@@ -1181,7 +1181,7 @@
+ 	rts
+ 
+ Ladddf$b$small:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,a2-a3	
+ #else
+ 	movel	sp@+,a4	
+@@ -1192,7 +1192,7 @@
+ 	movel	a6@(12),d1
+ 	lea	SYM (_fpCCR),a0
+ 	movew	IMM (0),a0@
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7	| restore data registers
+ #else
+ 	moveml	sp@,d2-d7
+@@ -1238,7 +1238,7 @@
+ 	bra	Ld$infty		|
+ 	
+ Ladddf$ret$1:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,a2-a3	| restore regs and exit
+ #else
+ 	movel	sp@+,a4
+@@ -1251,7 +1251,7 @@
+ 	lea	SYM (_fpCCR),a0
+ 	movew	IMM (0),a0@
+ 	orl	d7,d0		| put sign bit back
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7
+ #else
+ 	moveml	sp@,d2-d7
+@@ -1263,7 +1263,7 @@
+ 
+ Ladddf$ret$den:
+ | Return a denormalized number.
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0	| shift right once more
+ 	roxrl	IMM (1),d1	|
+ #else
+@@ -1329,7 +1329,7 @@
+ 
+ | double __muldf3(double, double);
+ SYM (__muldf3):
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	link	a6,IMM (0)
+ 	moveml	d2-d7,sp@-
+ #else
+@@ -1370,7 +1370,7 @@
+ 	andl	d6,d0			| isolate fraction
+ 	orl	IMM (0x00100000),d0	| and put hidden bit back
+ 	swap	d4			| I like exponents in the first byte
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (4),d4		| 
+ #else
+ 	lsrl	IMM (4),d4		| 
+@@ -1381,13 +1381,13 @@
+ 	andl	d6,d2			|
+ 	orl	IMM (0x00100000),d2	| and put hidden bit back
+ 	swap	d5			|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (4),d5		|
+ #else
+ 	lsrl	IMM (4),d5		|
+ #endif
+ Lmuldf$2:				|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	addw	d5,d4			| add exponents
+ 	subw	IMM (D_BIAS+1),d4	| and subtract bias (plus one)
+ #else
+@@ -1405,7 +1405,7 @@
+ | enough to keep everything in them. So we use the address registers to keep
+ | some intermediate data.
+ 
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	a2-a3,sp@-	| save a2 and a3 for temporary use
+ #else
+ 	movel	a2,sp@-
+@@ -1416,7 +1416,7 @@
+ 	movel	d4,a3		| and a3 will preserve the exponent
+ 
+ | First, shift d2-d3 so bit 20 becomes bit 31:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	rorl	IMM (5),d2	| rotate d2 5 places right
+ 	swap	d2		| and swap it
+ 	rorl	IMM (5),d3	| do the same thing with d3
+@@ -1447,7 +1447,7 @@
+ 
+ | We use a1 as counter:	
+ 	movel	IMM (DBL_MANT_DIG-1),a1		
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d7,a1
+ #else
+ 	movel	d7,a4
+@@ -1456,7 +1456,7 @@
+ #endif
+ 
+ 1:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d7,a1		| put counter back in a1
+ #else
+ 	movel	d7,a4
+@@ -1470,7 +1470,7 @@
+ 	addl	d7,d7		|
+ 	addxl	d6,d6		|
+ 	bcc	2f		| if bit clear skip the following
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d7,a2		|
+ #else
+ 	movel	d7,a4
+@@ -1481,7 +1481,7 @@
+ 	addxl	d4,d2		|
+ 	addxl	d7,d1		|
+ 	addxl	d7,d0		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d7,a2		| 
+ #else
+ 	movel	d7,a4
+@@ -1489,7 +1489,7 @@
+ 	movel	a4,a2
+ #endif
+ 2:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d7,a1		| put counter in d7
+ 	dbf	d7,1b		| decrement and branch
+ #else
+@@ -1501,7 +1501,7 @@
+ #endif
+ 
+ 	movel	a3,d4		| restore exponent
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,a2-a3
+ #else
+ 	movel	sp@+,a4
+@@ -1520,7 +1520,7 @@
+ 	swap	d3
+ 	movew	d3,d2
+ 	movew	IMM (0),d3
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0
+ 	roxrl	IMM (1),d1
+ 	roxrl	IMM (1),d2
+@@ -1556,7 +1556,7 @@
+ 
+ 	btst	IMM (DBL_MANT_DIG+1-32),d0
+ 	beq	Lround$exit
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0
+ 	roxrl	IMM (1),d1
+ 	addw	IMM (1),d4
+@@ -1592,7 +1592,7 @@
+ | NaN, in which case we return NaN.
+ Lmuldf$b$0:
+ 	movew	IMM (MULTIPLY),d5
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d2,d0		| put b (==0) into d0-d1
+ 	exg	d3,d1		| and a (with sign bit cleared) into d2-d3
+ #else
+@@ -1612,7 +1612,7 @@
+ 	bge	Ld$inop		| in case NaN or +/-INFINITY return NaN
+ 	lea	SYM (_fpCCR),a0
+ 	movew	IMM (0),a0@
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7
+ #else
+ 	moveml	sp@,d2-d7
+@@ -1631,7 +1631,7 @@
+ 	andl	d6,d0
+ 1:	addl	d1,d1           | shift a left until bit 20 is set
+ 	addxl	d0,d0		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (1),d4	| and adjust exponent
+ #else
+ 	subl	IMM (1),d4	| and adjust exponent
+@@ -1645,7 +1645,7 @@
+ 	andl	d6,d2
+ 1:	addl	d3,d3		| shift b left until bit 20 is set
+ 	addxl	d2,d2		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (1),d5	| and adjust exponent
+ #else
+ 	subql	IMM (1),d5	| and adjust exponent
+@@ -1661,7 +1661,7 @@
+ 
+ | double __divdf3(double, double);
+ SYM (__divdf3):
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	link	a6,IMM (0)
+ 	moveml	d2-d7,sp@-
+ #else
+@@ -1706,7 +1706,7 @@
+ 	andl	d6,d0		| and isolate fraction
+ 	orl	IMM (0x00100000),d0 | and put hidden bit back
+ 	swap	d4		| I like exponents in the first byte
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (4),d4	| 
+ #else
+ 	lsrl	IMM (4),d4	| 
+@@ -1717,13 +1717,13 @@
+ 	andl	d6,d2		|
+ 	orl	IMM (0x00100000),d2
+ 	swap	d5		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (4),d5	|
+ #else
+ 	lsrl	IMM (4),d5	|
+ #endif
+ Ldivdf$2:			|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	d5,d4		| subtract exponents
+ 	addw	IMM (D_BIAS),d4	| and add bias
+ #else
+@@ -1760,7 +1760,7 @@
+ 	bset	d5,d6		| set the corresponding bit in d6
+ 3:	addl	d1,d1		| shift a by 1
+ 	addxl	d0,d0		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	dbra	d5,1b		| and branch back
+ #else
+ 	subql	IMM (1), d5
+@@ -1782,7 +1782,7 @@
+ 	bset	d5,d7		| set the corresponding bit in d7
+ 3:	addl	d1,d1		| shift a by 1
+ 	addxl	d0,d0		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	dbra	d5,1b		| and branch back
+ #else
+ 	subql	IMM (1), d5
+@@ -1800,7 +1800,7 @@
+ 	beq	3f		| if d0==d2 check d1 and d3
+ 2:	addl	d1,d1		| shift a by 1
+ 	addxl	d0,d0		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	dbra	d5,1b		| and branch back
+ #else
+ 	subql	IMM (1), d5
+@@ -1816,7 +1816,7 @@
+ | to it; if you don't do this the algorithm loses in some cases). '
+ 	movel	IMM (0),d2
+ 	movel	d2,d3
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (DBL_MANT_DIG),d5
+ 	addw	IMM (63),d5
+ 	cmpw	IMM (31),d5
+@@ -1828,7 +1828,7 @@
+ 	bhi	2f
+ 1:	bset	d5,d3
+ 	bra	5f
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (32),d5
+ #else
+ 	subl	IMM (32),d5
+@@ -1847,7 +1847,7 @@
+ | not set:
+ 	btst	IMM (DBL_MANT_DIG-32+1),d0
+ 	beq	1f
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0
+ 	roxrl	IMM (1),d1
+ 	roxrl	IMM (1),d2
+@@ -1897,7 +1897,7 @@
+ 	movel	d0,d1		| 
+ 	lea	SYM (_fpCCR),a0	| clear exception flags
+ 	movew	IMM (0),a0@	|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7	| 
+ #else
+ 	moveml	sp@,d2-d7	| 
+@@ -1945,7 +1945,7 @@
+ 	andl	d6,d0
+ 1:	addl	d1,d1		| shift a left until bit 20 is set
+ 	addxl	d0,d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (1),d4	| and adjust exponent
+ #else
+ 	subl	IMM (1),d4	| and adjust exponent
+@@ -1959,7 +1959,7 @@
+ 	andl	d6,d2
+ 1:	addl	d3,d3		| shift b left until bit 20 is set
+ 	addxl	d2,d2
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (1),d5	| and adjust exponent
+ #else
+ 	subql	IMM (1),d5	| and adjust exponent
+@@ -1974,7 +1974,7 @@
+ | so that 2^21 <= d0 < 2^22, and the exponent is in the lower byte of d4.
+ 
+ | First check for underlow in the exponent:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (-DBL_MANT_DIG-1),d4		
+ #else
+ 	cmpl	IMM (-DBL_MANT_DIG-1),d4		
+@@ -1987,14 +1987,14 @@
+ 	movel	d7,a0		|
+ 	movel	IMM (0),d6	| use d6-d7 to collect bits flushed right
+ 	movel	d6,d7		| use d6-d7 to collect bits flushed right
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (1),d4	| if the exponent is less than 1 we 
+ #else
+ 	cmpl	IMM (1),d4	| if the exponent is less than 1 we 
+ #endif
+ 	bge	2f		| have to shift right (denormalize)
+ 1:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	addw	IMM (1),d4	| adjust the exponent
+ 	lsrl	IMM (1),d0	| shift right once 
+ 	roxrl	IMM (1),d1	|
+@@ -2037,12 +2037,12 @@
+ | Now call the rounding routine (which takes care of denormalized numbers):
+ 	lea	Lround$0,a0	| to return from rounding routine
+ 	lea	SYM (_fpCCR),a1	| check the rounding mode
+-#ifdef __mcf5200__
++#ifdef __mcoldfire__
+ 	clrl	d6
+ #endif
+ 	movew	a1@(6),d6	| rounding mode in d6
+ 	beq	Lround$to$nearest
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (ROUND_TO_PLUS),d6
+ #else
+ 	cmpl	IMM (ROUND_TO_PLUS),d6
+@@ -2058,7 +2058,7 @@
+ | check again for underflow!). We have to check for overflow or for a 
+ | denormalized number (which also signals underflow).
+ | Check for overflow (i.e., exponent >= 0x7ff).
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (0x07ff),d4
+ #else
+ 	cmpl	IMM (0x07ff),d4
+@@ -2069,14 +2069,14 @@
+ 	beq	Ld$den
+ 1:
+ | Put back the exponents and sign and return.
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lslw	IMM (4),d4	| exponent back to fourth byte
+ #else
+ 	lsll	IMM (4),d4	| exponent back to fourth byte
+ #endif
+ 	bclr	IMM (DBL_MANT_DIG-32-1),d0
+ 	swap	d0		| and put back exponent
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	orw	d4,d0		| 
+ #else
+ 	orl	d4,d0		| 
+@@ -2086,7 +2086,7 @@
+ 
+ 	lea	SYM (_fpCCR),a0
+ 	movew	IMM (0),a0@
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7
+ #else
+ 	moveml	sp@,d2-d7
+@@ -2102,7 +2102,7 @@
+ 
+ | double __negdf2(double, double);
+ SYM (__negdf2):
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	link	a6,IMM (0)
+ 	moveml	d2-d7,sp@-
+ #else
+@@ -2128,7 +2128,7 @@
+ 	bra	Ld$infty		
+ 1:	lea	SYM (_fpCCR),a0
+ 	movew	IMM (0),a0@
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7
+ #else
+ 	moveml	sp@,d2-d7
+@@ -2150,7 +2150,7 @@
+ 
+ | int __cmpdf2(double, double);
+ SYM (__cmpdf2):
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	link	a6,IMM (0)
+ 	moveml	d2-d7,sp@- 	| save registers
+ #else
+@@ -2194,7 +2194,7 @@
+ 	tstl	d6
+ 	bpl	1f
+ | If both are negative exchange them
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d0,d2
+ 	exg	d1,d3
+ #else
+@@ -2217,7 +2217,7 @@
+ 	bne	Lcmpdf$a$gt$b	| |b| < |a|
+ | If we got here a == b.
+ 	movel	IMM (EQUAL),d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7 	| put back the registers
+ #else
+ 	moveml	sp@,d2-d7
+@@ -2228,7 +2228,7 @@
+ 	rts
+ Lcmpdf$a$gt$b:
+ 	movel	IMM (GREATER),d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7 	| put back the registers
+ #else
+ 	moveml	sp@,d2-d7
+@@ -2239,7 +2239,7 @@
+ 	rts
+ Lcmpdf$b$gt$a:
+ 	movel	IMM (LESS),d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7 	| put back the registers
+ #else
+ 	moveml	sp@,d2-d7
+@@ -2287,7 +2287,7 @@
+ | Normalize shifting left until bit #DBL_MANT_DIG-32 is set or the exponent 
+ | is one (remember that a denormalized number corresponds to an 
+ | exponent of -D_BIAS+1).
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (1),d4	| remember that the exponent is at least one
+ #else
+ 	cmpl	IMM (1),d4	| remember that the exponent is at least one
+@@ -2297,7 +2297,7 @@
+ 	addxl	d2,d2		|
+ 	addxl	d1,d1		|
+ 	addxl	d0,d0		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	dbra	d4,1b		|
+ #else
+ 	subql	IMM (1), d4
+@@ -2325,7 +2325,7 @@
+ 	addxl	d2,d0
+ | Shift right once (because we used bit #DBL_MANT_DIG-32!).
+ 2:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0
+ 	roxrl	IMM (1),d1		
+ #else
+@@ -2340,7 +2340,7 @@
+ | 'fraction overflow' ...).
+ 	btst	IMM (DBL_MANT_DIG-32),d0	
+ 	beq	1f
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0
+ 	roxrl	IMM (1),d1
+ 	addw	IMM (1),d4
+@@ -2491,7 +2491,7 @@
+ 
+ | float __addsf3(float, float);
+ SYM (__addsf3):
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	link	a6,IMM (0)	| everything will be done in registers
+ 	moveml	d2-d7,sp@-	| save all data registers but d0-d1
+ #else
+@@ -2551,7 +2551,7 @@
+ | same, and put the largest exponent in d6. Note that we are using two
+ | registers for each number (see the discussion by D. Knuth in "Seminumerical 
+ | Algorithms").
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	d6,d7		| compare exponents
+ #else
+ 	cmpl	d6,d7		| compare exponents
+@@ -2561,32 +2561,32 @@
+ 1:
+ 	subl	d6,d7		| keep the largest exponent
+ 	negl	d7
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (8),d7	| put difference in lower byte
+ #else
+ 	lsrl	IMM (8),d7	| put difference in lower byte
+ #endif
+ | if difference is too large we don't shift (actually, we can just exit) '
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (FLT_MANT_DIG+2),d7		
+ #else
+ 	cmpl	IMM (FLT_MANT_DIG+2),d7		
+ #endif
+ 	bge	Laddsf$b$small
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (16),d7	| if difference >= 16 swap
+ #else
+ 	cmpl	IMM (16),d7	| if difference >= 16 swap
+ #endif
+ 	bge	4f
+ 2:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (1),d7
+ #else
+ 	subql	IMM (1), d7
+ #endif
+ 3:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d2	| shift right second operand
+ 	roxrl	IMM (1),d3
+ 	dbra	d7,3b
+@@ -2605,7 +2605,7 @@
+ 	swap	d3
+ 	movew	d3,d2
+ 	swap	d2
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (16),d7
+ #else
+ 	subl	IMM (16),d7
+@@ -2613,7 +2613,7 @@
+ 	bne	2b		| if still more bits, go back to normal case
+ 	bra	Laddsf$3
+ 5:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d6,d7		| exchange the exponents
+ #else
+ 	eorl	d6,d7
+@@ -2622,32 +2622,32 @@
+ #endif
+ 	subl	d6,d7		| keep the largest exponent
+ 	negl	d7		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (8),d7	| put difference in lower byte
+ #else
+ 	lsrl	IMM (8),d7	| put difference in lower byte
+ #endif
+ | if difference is too large we don't shift (and exit!) '
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (FLT_MANT_DIG+2),d7		
+ #else
+ 	cmpl	IMM (FLT_MANT_DIG+2),d7		
+ #endif
+ 	bge	Laddsf$a$small
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (16),d7	| if difference >= 16 swap
+ #else
+ 	cmpl	IMM (16),d7	| if difference >= 16 swap
+ #endif
+ 	bge	8f
+ 6:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (1),d7
+ #else
+ 	subl	IMM (1),d7
+ #endif
+ 7:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0	| shift right first operand
+ 	roxrl	IMM (1),d1
+ 	dbra	d7,7b
+@@ -2666,7 +2666,7 @@
+ 	swap	d1
+ 	movew	d1,d0
+ 	swap	d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (16),d7
+ #else
+ 	subl	IMM (16),d7
+@@ -2679,7 +2679,7 @@
+ 
+ Laddsf$3:
+ | Here we have to decide whether to add or subtract the numbers
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d6,a0		| get signs back
+ 	exg	d7,a1		| and save the exponents
+ #else
+@@ -2696,7 +2696,7 @@
+ 				| numbers
+ 
+ | Here we have both positive or both negative
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d6,a0		| now we have the exponent in d6
+ #else
+ 	movel	d6,d4
+@@ -2713,7 +2713,7 @@
+ | Put the exponent, in the first byte, in d2, to use the "standard" rounding
+ | routines:
+ 	movel	d6,d2
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (8),d2
+ #else
+ 	lsrl	IMM (8),d2
+@@ -2725,7 +2725,7 @@
+ | one more bit we check this:
+ 	btst	IMM (FLT_MANT_DIG+1),d0	
+ 	beq	1f
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0
+ 	roxrl	IMM (1),d1
+ #else
+@@ -2739,12 +2739,12 @@
+ 1:
+ 	lea	Laddsf$4,a0	| to return from rounding routine
+ 	lea	SYM (_fpCCR),a1	| check the rounding mode
+-#ifdef __mcf5200__
++#ifdef __mcoldfire__
+ 	clrl	d6
+ #endif
+ 	movew	a1@(6),d6	| rounding mode in d6
+ 	beq	Lround$to$nearest
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (ROUND_TO_PLUS),d6
+ #else
+ 	cmpl	IMM (ROUND_TO_PLUS),d6
+@@ -2754,14 +2754,14 @@
+ 	bra	Lround$to$plus
+ Laddsf$4:
+ | Put back the exponent, but check for overflow.
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (0xff),d2
+ #else
+ 	cmpl	IMM (0xff),d2
+ #endif
+ 	bhi	1f
+ 	bclr	IMM (FLT_MANT_DIG-1),d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lslw	IMM (7),d2
+ #else
+ 	lsll	IMM (7),d2
+@@ -2787,7 +2787,7 @@
+ 	negl	d1
+ 	negxl	d0
+ 1:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d2,a0		| now we have the exponent in d2
+ 	lsrw	IMM (8),d2	| put it in the first byte
+ #else
+@@ -2804,12 +2804,12 @@
+ | the rounding routines themselves.
+ 	lea	Lsubsf$1,a0	| to return from rounding routine
+ 	lea	SYM (_fpCCR),a1	| check the rounding mode
+-#ifdef __mcf5200__
++#ifdef __mcoldfire__
+ 	clrl	d6
+ #endif
+ 	movew	a1@(6),d6	| rounding mode in d6
+ 	beq	Lround$to$nearest
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (ROUND_TO_PLUS),d6
+ #else
+ 	cmpl	IMM (ROUND_TO_PLUS),d6
+@@ -2820,7 +2820,7 @@
+ Lsubsf$1:
+ | Put back the exponent (we can't have overflow!). '
+ 	bclr	IMM (FLT_MANT_DIG-1),d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lslw	IMM (7),d2
+ #else
+ 	lsll	IMM (7),d2
+@@ -2836,7 +2836,7 @@
+ 	movel	a6@(12),d0
+ 	lea	SYM (_fpCCR),a0
+ 	movew	IMM (0),a0@
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7	| restore data registers
+ #else
+ 	moveml	sp@,d2-d7
+@@ -2850,7 +2850,7 @@
+ 	movel	a6@(8),d0
+ 	lea	SYM (_fpCCR),a0
+ 	movew	IMM (0),a0@
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7	| restore data registers
+ #else
+ 	moveml	sp@,d2-d7
+@@ -2908,7 +2908,7 @@
+ 	lea	SYM (_fpCCR),a0
+ 	movew	IMM (0),a0@
+ 	orl	d7,d0		| put sign bit
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7	| restore data registers
+ #else
+ 	moveml	sp@,d2-d7
+@@ -2975,7 +2975,7 @@
+ 
+ | float __mulsf3(float, float);
+ SYM (__mulsf3):
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	link	a6,IMM (0)
+ 	moveml	d2-d7,sp@-
+ #else
+@@ -3010,7 +3010,7 @@
+ 	andl	d5,d0		| and isolate fraction
+ 	orl	d4,d0		| and put hidden bit back
+ 	swap	d2		| I like exponents in the first byte
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (7),d2	| 
+ #else
+ 	lsrl	IMM (7),d2	| 
+@@ -3021,13 +3021,13 @@
+ 	andl	d5,d1		|
+ 	orl	d4,d1		|
+ 	swap	d3		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (7),d3	|
+ #else
+ 	lsrl	IMM (7),d3	|
+ #endif
+ Lmulsf$2:			|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	addw	d3,d2		| add exponents
+ 	subw	IMM (F_BIAS+1),d2 | and subtract bias (plus one)
+ #else
+@@ -3060,7 +3060,7 @@
+ 	addl	d5,d1		| add a
+ 	addxl	d4,d0
+ 2:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	dbf	d3,1b		| loop back
+ #else
+ 	subql	IMM (1),d3
+@@ -3070,7 +3070,7 @@
+ | Now we have the product in d0-d1, with bit (FLT_MANT_DIG - 1) + FLT_MANT_DIG
+ | (mod 32) of d0 set. The first thing to do now is to normalize it so bit 
+ | FLT_MANT_DIG is set (to do the rounding).
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	rorl	IMM (6),d1
+ 	swap	d1
+ 	movew	d1,d3
+@@ -3089,7 +3089,7 @@
+ 	lsll	IMM (8),d0
+ 	addl	d0,d0
+ 	addl	d0,d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	orw	d3,d0
+ #else
+ 	orl	d3,d0
+@@ -3099,7 +3099,7 @@
+ 	
+ 	btst	IMM (FLT_MANT_DIG+1),d0
+ 	beq	Lround$exit
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrl	IMM (1),d0
+ 	roxrl	IMM (1),d1
+ 	addw	IMM (1),d2
+@@ -3143,7 +3143,7 @@
+ 	bge	Lf$inop		| if b is +/-INFINITY or NaN return NaN
+ 	lea	SYM (_fpCCR),a0	| else return zero
+ 	movew	IMM (0),a0@	| 
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7	| 
+ #else
+ 	moveml	sp@,d2-d7
+@@ -3161,7 +3161,7 @@
+ 	movel	IMM (1),d2
+ 	andl	d5,d0
+ 1:	addl	d0,d0		| shift a left (until bit 23 is set)
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (1),d2	| and adjust exponent
+ #else
+ 	subql	IMM (1),d2	| and adjust exponent
+@@ -3174,7 +3174,7 @@
+ 	movel	IMM (1),d3
+ 	andl	d5,d1
+ 1:	addl	d1,d1		| shift b left until bit 23 is set
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (1),d3	| and adjust exponent
+ #else
+ 	subl	IMM (1),d3	| and adjust exponent
+@@ -3189,7 +3189,7 @@
+ 
+ | float __divsf3(float, float);
+ SYM (__divsf3):
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	link	a6,IMM (0)
+ 	moveml	d2-d7,sp@-
+ #else
+@@ -3226,7 +3226,7 @@
+ 	andl	d5,d0		| and isolate fraction
+ 	orl	d4,d0		| and put hidden bit back
+ 	swap	d2		| I like exponents in the first byte
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (7),d2	| 
+ #else
+ 	lsrl	IMM (7),d2	| 
+@@ -3237,13 +3237,13 @@
+ 	andl	d5,d1		|
+ 	orl	d4,d1		|
+ 	swap	d3		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lsrw	IMM (7),d3	|
+ #else
+ 	lsrl	IMM (7),d3	|
+ #endif
+ Ldivsf$2:			|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	d3,d2		| subtract exponents
+  	addw	IMM (F_BIAS),d2	| and add bias
+ #else
+@@ -3270,7 +3270,7 @@
+ 	subl	d1,d0		| if a >= b  a <-- a-b
+ 	beq	3f		| if a is zero, exit
+ 2:	addl	d0,d0		| multiply a by 2
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	dbra	d3,1b
+ #else
+ 	subql	IMM (1),d3
+@@ -3282,7 +3282,7 @@
+ 1:	cmpl	d0,d1
+ 	ble	2f
+ 	addl	d0,d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	dbra	d3,1b
+ #else
+ 	subql	IMM(1),d3
+@@ -3291,7 +3291,7 @@
+ 	movel	IMM (0),d1
+ 	bra	3f
+ 2:	movel	IMM (0),d1
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (FLT_MANT_DIG),d3
+ 	addw	IMM (31),d3
+ #else
+@@ -3309,7 +3309,7 @@
+ 	btst	IMM (FLT_MANT_DIG+1),d0		
+ 	beq	1f              | if it is not set, then bit 24 is set
+ 	lsrl	IMM (1),d0	|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	addw	IMM (1),d2	|
+ #else
+ 	addl	IMM (1),d2	|
+@@ -3343,7 +3343,7 @@
+ 	movel	IMM (0),d0		| else return zero
+ 	lea	SYM (_fpCCR),a0		|
+ 	movew	IMM (0),a0@		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7		| 
+ #else
+ 	moveml	sp@,d2-d7		| 
+@@ -3375,7 +3375,7 @@
+ 	movel	IMM (1),d2
+ 	andl	d5,d0
+ 1:	addl	d0,d0		| shift a left until bit FLT_MANT_DIG-1 is set
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (1),d2	| and adjust exponent
+ #else
+ 	subl	IMM (1),d2	| and adjust exponent
+@@ -3388,7 +3388,7 @@
+ 	movel	IMM (1),d3
+ 	andl	d5,d1
+ 1:	addl	d1,d1		| shift b left until bit FLT_MANT_DIG is set
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	subw	IMM (1),d3	| and adjust exponent
+ #else
+ 	subl	IMM (1),d3	| and adjust exponent
+@@ -3401,7 +3401,7 @@
+ | This is a common exit point for __mulsf3 and __divsf3. 
+ 
+ | First check for underlow in the exponent:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (-FLT_MANT_DIG-1),d2		
+ #else
+ 	cmpl	IMM (-FLT_MANT_DIG-1),d2		
+@@ -3412,14 +3412,14 @@
+ | exponent until it becomes 1 or the fraction is zero (in the latter case 
+ | we signal underflow and return zero).
+ 	movel	IMM (0),d6	| d6 is used temporarily
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (1),d2	| if the exponent is less than 1 we 
+ #else
+ 	cmpl	IMM (1),d2	| if the exponent is less than 1 we 
+ #endif
+ 	bge	2f		| have to shift right (denormalize)
+ 1:
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	addw	IMM (1),d2	| adjust the exponent
+ 	lsrl	IMM (1),d0	| shift right once 
+ 	roxrl	IMM (1),d1	|
+@@ -3446,12 +3446,12 @@
+ | Now call the rounding routine (which takes care of denormalized numbers):
+ 	lea	Lround$0,a0	| to return from rounding routine
+ 	lea	SYM (_fpCCR),a1	| check the rounding mode
+-#ifdef __mcf5200__
++#ifdef __mcoldfire__
+ 	clrl	d6
+ #endif
+ 	movew	a1@(6),d6	| rounding mode in d6
+ 	beq	Lround$to$nearest
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (ROUND_TO_PLUS),d6
+ #else
+ 	cmpl	IMM (ROUND_TO_PLUS),d6
+@@ -3467,7 +3467,7 @@
+ | check again for underflow!). We have to check for overflow or for a 
+ | denormalized number (which also signals underflow).
+ | Check for overflow (i.e., exponent >= 255).
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (0x00ff),d2
+ #else
+ 	cmpl	IMM (0x00ff),d2
+@@ -3478,14 +3478,14 @@
+ 	beq	Lf$den
+ 1:
+ | Put back the exponents and sign and return.
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	lslw	IMM (7),d2	| exponent back to fourth byte
+ #else
+ 	lsll	IMM (7),d2	| exponent back to fourth byte
+ #endif
+ 	bclr	IMM (FLT_MANT_DIG-1),d0
+ 	swap	d0		| and put back exponent
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	orw	d2,d0		| 
+ #else
+ 	orl	d2,d0
+@@ -3495,7 +3495,7 @@
+ 
+ 	lea	SYM (_fpCCR),a0
+ 	movew	IMM (0),a0@
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7
+ #else
+ 	moveml	sp@,d2-d7
+@@ -3514,7 +3514,7 @@
+ 
+ | float __negsf2(float);
+ SYM (__negsf2):
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	link	a6,IMM (0)
+ 	moveml	d2-d7,sp@-
+ #else
+@@ -3536,7 +3536,7 @@
+ 	bra	Lf$infty		
+ 1:	lea	SYM (_fpCCR),a0
+ 	movew	IMM (0),a0@
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7
+ #else
+ 	moveml	sp@,d2-d7
+@@ -3558,7 +3558,7 @@
+ 
+ | int __cmpsf2(float, float);
+ SYM (__cmpsf2):
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	link	a6,IMM (0)
+ 	moveml	d2-d7,sp@- 	| save registers
+ #else
+@@ -3595,7 +3595,7 @@
+ 	tstl	d6
+ 	bpl	1f
+ | If both are negative exchange them
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	exg	d0,d1
+ #else
+ 	movel	d0,d7
+@@ -3610,7 +3610,7 @@
+ 	bne	Lcmpsf$a$gt$b	| |b| < |a|
+ | If we got here a == b.
+ 	movel	IMM (EQUAL),d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7 	| put back the registers
+ #else
+ 	moveml	sp@,d2-d7
+@@ -3619,7 +3619,7 @@
+ 	rts
+ Lcmpsf$a$gt$b:
+ 	movel	IMM (GREATER),d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7 	| put back the registers
+ #else
+ 	moveml	sp@,d2-d7
+@@ -3630,7 +3630,7 @@
+ 	rts
+ Lcmpsf$b$gt$a:
+ 	movel	IMM (LESS),d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	moveml	sp@+,d2-d7 	| put back the registers
+ #else
+ 	moveml	sp@,d2-d7
+@@ -3668,7 +3668,7 @@
+ | Normalize shifting left until bit #FLT_MANT_DIG is set or the exponent 
+ | is one (remember that a denormalized number corresponds to an 
+ | exponent of -F_BIAS+1).
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	cmpw	IMM (1),d2	| remember that the exponent is at least one
+ #else
+ 	cmpl	IMM (1),d2	| remember that the exponent is at least one
+@@ -3676,7 +3676,7 @@
+  	beq	2f		| an exponent of one means denormalized
+ 	addl	d1,d1		| else shift and adjust the exponent
+ 	addxl	d0,d0		|
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	dbra	d2,1b		|
+ #else
+ 	subql	IMM (1),d2
+@@ -3705,7 +3705,7 @@
+ 	btst	IMM (FLT_MANT_DIG),d0	
+ 	beq	1f
+ 	lsrl	IMM (1),d0
+-#ifndef __mcf5200__
++#ifndef __mcoldfire__
+ 	addw	IMM (1),d2
+ #else
+ 	addql	IMM (1),d2
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/linux.h gcc-3.3.1/gcc/config/m68k/linux.h
+--- gcc-3.3.1.orig/gcc/config/m68k/linux.h	2003-01-28 23:18:15.000000000 +0100
++++ gcc-3.3.1/gcc/config/m68k/linux.h	2003-07-25 00:25:30.000000000 +0200
+@@ -196,7 +196,7 @@
+ #undef ASM_OUTPUT_CASE_LABEL
+ #define ASM_RETURN_CASE_JUMP				\
+   do {							\
+-    if (TARGET_5200)					\
++    if (TARGET_COLDFIRE)				\
+       {							\
+ 	if (ADDRESS_REG_P (operands[0]))		\
+ 	  return "jmp %%pc@(2,%0:l)";			\
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/m68k-none.h gcc-3.3.1/gcc/config/m68k/m68k-none.h
+--- gcc-3.3.1.orig/gcc/config/m68k/m68k-none.h	1998-12-16 22:06:54.000000000 +0100
++++ gcc-3.3.1/gcc/config/m68k/m68k-none.h	2003-07-25 00:25:30.000000000 +0200
+@@ -97,7 +97,7 @@
+ #undef CPP_FPU_SPEC
+ #if TARGET_DEFAULT & MASK_68881
+ #define CPP_FPU_SPEC "\
+-%{!mc68000:%{!m68000:%{!m68302:%{!mcpu32:%{!m68332:%{!m5200:%{!msoft-float:%{!mno-68881:%{!mfpa:%{!msky:-D__HAVE_68881__ }}}}}}}}}} \
++%{!mc68000:%{!m68000:%{!m68302:%{!mcpu32:%{!m68332:%{!m5200:%{!m5206e:%{!m528x:%{!m5307:%{!m5407:%{!msoft-float:%{!mno-68881:%{!mfpa:%{!msky:-D__HAVE_68881__ }}}}}}}}}}}}}} \
+ %{m68881:-D__HAVE_68881__ }%{mfpa:-D__HAVE_FPA__ }%{msky:-D__HAVE_SKY__ }"
+ #else
+ /* This can't currently happen, but we code it anyway to show how it's done.  */
+@@ -125,7 +125,12 @@
+    -m68302: define mc68302 
+    -m68332: define mc68332 mcpu32
+    -mcpu32: define mcpu32
+-   -m5200: define mcf5200
++   -m5200: define mcoldfire mcf5200
++   -m5206e: define mcoldfire mcf5200 mcf5206e
++   -m528x: define mcoldfire mc5200 mc528x
++   -m5307: define mcoldfire mc5300 mc5307
++   -m5407: define mcoldfire mc5400 mc5407
++
+    default: define as above appropriately
+ 
+    GCC won't automatically add __'d versions, we have to mention them
+@@ -133,9 +138,13 @@
+ 
+ #undef CPP_SPEC
+ #define CPP_SPEC "\
+-%(cpp_fpu)%{!ansi:%{m68302:-Dmc68302 }%{m68010:-Dmc68010 }%{m68020:-Dmc68020 }%{mc68020:-Dmc68020 }%{m68030:-Dmc68030 }%{m68040:-Dmc68040 }%{m68020-40:-Dmc68020 -Dmc68030 -Dmc68040 }%{m68020-60:-Dmc68020 -Dmc68030 -Dmc68040 -Dmc68060 }%{m68060:-Dmc68060 }%{mcpu32:-Dmcpu32 } %{m68332:-Dmc68332 -Dmcpu32 }%{m5200:-Dmcf5200 }} \
+-%{m68302:-D__mc68302__ -D__mc68302 }%{m68010:-D__mc68010__ -D__mc68010 }%{m68020:-D__mc68020__ -D__mc68020 }%{mc68020:-D__mc68020__ -D__mc68020 }%{m68030:-D__mc68030__ -D__mc68030 }%{m68040:-D__mc68040__ -D__mc68040 }%{m68020-40:-D__mc68020__ -D__mc68030__ -D__mc68040__ -D__mc68020 -D__mc68030 -D__mc68040 }%{m68020-60:-D__mc68020__ -D__mc68030__ -D__mc68040__ -D__mc68020 -D__mc68030 -D__mc68040 -D__mc68060__ -D__mc68060 }%{m68060:-D__mc68060__ -D__mc68060 }%{mcpu32:-D__mcpu32__ -D__mcpu32 }%{m68332:-D__mc68332__ -D__mc68332 -D__mcpu32__ -D__mcpu32 }%{m5200:-D__mcf5200__ -D__mcf5200 } \
+-%{!mc68000:%{!m68000:%{!m68302:%{!m68010:%{!mc68020:%{!m68020:%{!m68030:%{!m68040:%{!m68020-40:%{!m68020-60:%{!m68060:%{!mcpu32: %{!m68332:%{!m5200:%(cpp_cpu_default)}}}}}}}}}}}}}} \
++%(cpp_fpu)%{!ansi:%{m68302:-Dmc68302 }%{m68010:-Dmc68010 }%{m68020:-Dmc68020 }%{mc68020:-Dmc68020 }%{m68030:-Dmc68030 }%{m68040:-Dmc68040 }%{m68020-40:-Dmc68020 -Dmc68030 -Dmc68040 }%{m68020-60:-Dmc68020 -Dmc68030 -Dmc68040 -Dmc68060 }%{m68060:-Dmc68060 }%{mcpu32:-Dmcpu32 } %{m68332:-Dmc68332 -Dmcpu32 }%{m5200:-Dmcoldfire -Dmcf5200 }%{m5206e:-Dmcoldfire -Dmcf5200 -Dmcf5206e }%{m528x:-Dmcoldfire -Dmcf5200 -Dmcf528x }%{m5307:-Dmcoldfire -Dmcf5300 -Dmcf5307 }%{m5407: -Dmcoldfire -Dmcf5400 -Dmcf5407 }} \
++%{m68302:-D__mc68302__ -D__mc68302 }%{m68010:-D__mc68010__ -D__mc68010 }%{m68020:-D__mc68020__ -D__mc68020 }%{mc68020:-D__mc68020__ -D__mc68020 }%{m68030:-D__mc68030__ -D__mc68030 }%{m68040:-D__mc68040__ -D__mc68040 }%{m68020-40:-D__mc68020__ -D__mc68030__ -D__mc68040__ -D__mc68020 -D__mc68030 -D__mc68040 }%{m68020-60:-D__mc68020__ -D__mc68030__ -D__mc68040__ -D__mc68020 -D__mc68030 -D__mc68040 -D__mc68060__ -D__mc68060 }%{m68060:-D__mc68060__ -D__mc68060 }%{mcpu32:-D__mcpu32__ -D__mcpu32 }%{m68332:-D__mc68332__ -D__mc68332 -D__mcpu32__ -D__mcpu32 }%{m5200:-D__mcf5200__ -D__mcf5200 -D__mcoldfire__ } \
++%{m5206e:-D__mcoldfire__ -D__mcf5200__ -D__mcf5200 -D__mcf5206e__ -D__mcf5206e } \
++%{m528x:-D__mcoldfire__ -D__mcf5200__ -D__mcf5200 -D__mcf528x__ -D__mcf528x } \
++%{m5307:-D__mcoldfire__ -D__mcf5300__ -D__mcf5300 -D__mcf5307__ -D__mcf5307 } \
++%{m5407:-D__mcoldfire__ -D__mcf5400__ -D__mcf5400 -D__mcf5407__ -D__mcf5407 } \
++%{!mc68000:%{!m68000:%{!m68302:%{!m68010:%{!mc68020:%{!m68020:%{!m68030:%{!m68040:%{!m68020-40:%{!m68020-60:%{!m68060:%{!mcpu32: %{!m68332:%{!m5200:%{!m5206e:%{!m528x:%{!m5307:%{!m5407:%(cpp_cpu_default)}}}}}}}}}}}}}}}}}} \
+ %(cpp_subtarget) \
+ "
+ 
+@@ -143,7 +152,7 @@
+ 
+ #undef ASM_SPEC
+ #define ASM_SPEC "\
+-%{m68851}%{mno-68851}%{m68881}%{mno-68881}%{msoft-float:-mno-68881 }%{m68000}%{m68302}%{mc68000}%{m68010}%{m68020}%{mc68020}%{m68030}%{m68040}%{m68020-40:-mc68040 }%{m68020-60:-mc68040 }%{m68060}%{mcpu32}%{m68332}%{m5200}%{!mc68000:%{!m68000:%{!m68302:%{!m68010:%{!mc68020:%{!m68020:%{!m68030:%{!m68040:%{!m68020-40:%{!m68020-60:%{!m68060:%{!mcpu32:%{!m68332:%{!m5200:%(asm_cpu_default) }}}}}}}}}}}}}} \
++%{m68851}%{mno-68851}%{m68881}%{mno-68881}%{msoft-float:-mno-68881 }%{m68000}%{m68302}%{mc68000}%{m68010}%{m68020}%{mc68020}%{m68030}%{m68040}%{m68020-40:-mc68040 }%{m68020-60:-mc68040 }%{m68060}%{mcpu32}%{m68332}%{m5200}%{m5206e}%{m528x}%{m5307}%{m5407}%{!mc68000:%{!m68000:%{!m68302:%{!m68010:%{!mc68020:%{!m68020:%{!m68030:%{!m68040:%{!m68020-40:%{!m68020-60:%{!m68060:%{!mcpu32:%{!m68332:%{!m5200:%{!m5206e:%{!m528x:%{!m5307:%{!m5407:%(asm_cpu_default) }}}}}}}}}}}}}}}}}} \
+ "
+ 
+ /* cc1/cc1plus always receives all the -m flags. If the specs strings above 
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/m68k.c gcc-3.3.1/gcc/config/m68k/m68k.c
+--- gcc-3.3.1.orig/gcc/config/m68k/m68k.c	2003-06-28 02:27:04.000000000 +0200
++++ gcc-3.3.1/gcc/config/m68k/m68k.c	2003-07-25 00:25:30.000000000 +0200
+@@ -397,7 +397,7 @@
+ #ifndef NO_ADDSUB_Q
+ 	  if (fsize + 4 <= 8)
+ 	    {
+-	      if (!TARGET_5200)
++	      if (!TARGET_COLDFIRE)
+ 		{
+ 		  /* asm_fprintf() cannot handle %.  */
+ #ifdef MOTOROLA
+@@ -595,7 +595,7 @@
+     }
+   else if (mask)
+     {
+-      if (TARGET_5200)
++      if (TARGET_COLDFIRE)
+ 	{
+ 	  /* The coldfire does not support the predecrement form of the 
+ 	     movml instruction, so we must adjust the stack pointer and
+@@ -872,7 +872,7 @@
+ #endif
+       fsize = 0, big = 1;
+     }
+-  if (TARGET_5200 || nregs <= 2)
++  if (TARGET_COLDFIRE || nregs <= 2)
+     {
+       /* Restore each separately in the same order moveml does.
+          Using two movel instructions instead of a single moveml
+@@ -1048,7 +1048,7 @@
+ #ifndef NO_ADDSUB_Q
+       if (fsize + 4 <= 8) 
+ 	{
+-	  if (!TARGET_5200)
++	  if (!TARGET_COLDFIRE)
+ 	    {
+ #ifdef MOTOROLA
+ 	      asm_fprintf (stream, "\taddq.w %0I%d,%Rsp\n", fsize + 4);
+@@ -1343,7 +1343,7 @@
+     }
+   else
+     {
+-      if (TARGET_68020 || TARGET_5200 || ! ADDRESS_REG_P (loperands[0]))
++      if (TARGET_68020 || TARGET_COLDFIRE || ! ADDRESS_REG_P (loperands[0]))
+ 	output_asm_insn ("tst%.l %0", loperands);
+       else
+ 	{
+@@ -1360,7 +1360,7 @@
+       output_asm_insn ("jne %l4", loperands);
+ #endif
+ 
+-      if (TARGET_68020 || TARGET_5200 || ! ADDRESS_REG_P (loperands[1]))
++      if (TARGET_68020 || TARGET_COLDFIRE || ! ADDRESS_REG_P (loperands[1]))
+ 	output_asm_insn ("tst%.l %1", loperands);
+       else
+ 	{
+@@ -1678,7 +1678,7 @@
+ 
+   /* The Coldfire doesn't have byte or word operations.  */
+   /* FIXME: This may not be useful for the m68060 either */
+-  if (!TARGET_5200) 
++  if (!TARGET_COLDFIRE) 
+     {
+       /* if -256 < N < 256 but N is not in range for a moveq
+ 	 N^ff will be, so use moveq #N^ff, dreg; not.b dreg.  */
+@@ -1783,7 +1783,7 @@
+ 	  || GET_CODE (operands[0]) == MEM)
+       /* clr insns on 68000 read before writing.
+ 	 This isn't so on the 68010, but we have no TARGET_68010.  */
+-      && ((TARGET_68020 || TARGET_5200)
++      && ((TARGET_68020 || TARGET_COLDFIRE)
+ 	  || !(GET_CODE (operands[0]) == MEM
+ 	       && MEM_VOLATILE_P (operands[0]))))
+     return "clr%.l %0";
+@@ -1833,7 +1833,7 @@
+ 	      || GET_CODE (operands[0]) == MEM)
+ 	  /* clr insns on 68000 read before writing.
+ 	     This isn't so on the 68010, but we have no TARGET_68010.  */
+-	  && ((TARGET_68020 || TARGET_5200)
++	  && ((TARGET_68020 || TARGET_COLDFIRE)
+ 	      || !(GET_CODE (operands[0]) == MEM
+ 		   && MEM_VOLATILE_P (operands[0]))))
+ 	return "clr%.w %0";
+@@ -1905,7 +1905,7 @@
+       && GET_CODE (XEXP (operands[0], 0)) == PRE_DEC
+       && XEXP (XEXP (operands[0], 0), 0) == stack_pointer_rtx
+       && ! ADDRESS_REG_P (operands[1])
+-      && ! TARGET_5200)
++      && ! TARGET_COLDFIRE)
+     {
+       xoperands[1] = operands[1];
+       xoperands[2]
+@@ -1930,12 +1930,12 @@
+   /* clr and st insns on 68000 read before writing.
+      This isn't so on the 68010, but we have no TARGET_68010.  */
+   if (!ADDRESS_REG_P (operands[0])
+-      && ((TARGET_68020 || TARGET_5200)
++      && ((TARGET_68020 || TARGET_COLDFIRE)
+ 	  || !(GET_CODE (operands[0]) == MEM && MEM_VOLATILE_P (operands[0]))))
+     {
+       if (operands[1] == const0_rtx)
+ 	return "clr%.b %0";
+-      if ((!TARGET_5200 || DATA_REG_P (operands[0]))
++      if ((!TARGET_COLDFIRE || DATA_REG_P (operands[0]))
+ 	  && GET_CODE (operands[1]) == CONST_INT
+ 	  && (INTVAL (operands[1]) & 255) == 255)
+ 	{
+@@ -1972,7 +1972,7 @@
+   if (operands[1] == const0_rtx
+       /* clr insns on 68000 read before writing.
+ 	 This isn't so on the 68010, but we have no TARGET_68010.  */
+-      && ((TARGET_68020 || TARGET_5200)
++      && ((TARGET_68020 || TARGET_COLDFIRE)
+ 	  || !(GET_CODE (operands[0]) == MEM && MEM_VOLATILE_P (operands[0]))))
+     return "clr%.w %0";
+   return "move%.w %1,%0";
+@@ -1985,7 +1985,7 @@
+   if (operands[1] == const0_rtx
+       /* clr insns on 68000 read before writing.
+          This isn't so on the 68010, but we have no TARGET_68010.  */
+-      && ((TARGET_68020 || TARGET_5200)
++      && ((TARGET_68020 || TARGET_COLDFIRE)
+           || !(GET_CODE (operands[0]) == MEM && MEM_VOLATILE_P (operands[0]))))
+     return "clr%.b %0";
+   return "move%.b %1,%0";
+@@ -3718,7 +3718,7 @@
+       && (INTVAL (operands[2]) | 0xffff) == 0xffffffff
+       && (DATA_REG_P (operands[0])
+ 	  || offsettable_memref_p (operands[0]))
+-      && !TARGET_5200)
++      && !TARGET_COLDFIRE)
+     {
+       if (GET_CODE (operands[0]) != REG)
+         operands[0] = adjust_address (operands[0], HImode, 2);
+@@ -3759,7 +3759,7 @@
+       && INTVAL (operands[2]) >> 16 == 0
+       && (DATA_REG_P (operands[0])
+ 	  || offsettable_memref_p (operands[0]))
+-      && !TARGET_5200)
++      && !TARGET_COLDFIRE)
+     {
+       if (GET_CODE (operands[0]) != REG)
+         operands[0] = adjust_address (operands[0], HImode, 2);
+@@ -3795,7 +3795,7 @@
+   if (GET_CODE (operands[2]) == CONST_INT
+       && INTVAL (operands[2]) >> 16 == 0
+       && (offsettable_memref_p (operands[0]) || DATA_REG_P (operands[0]))
+-      && !TARGET_5200)
++      && !TARGET_COLDFIRE)
+     {
+       if (! DATA_REG_P (operands[0]))
+ 	operands[0] = adjust_address (operands[0], HImode, 2);
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/m68k.h gcc-3.3.1/gcc/config/m68k/m68k.h
+--- gcc-3.3.1.orig/gcc/config/m68k/m68k.h	2002-12-03 20:45:30.000000000 +0100
++++ gcc-3.3.1/gcc/config/m68k/m68k.h	2003-07-25 00:25:30.000000000 +0200
+@@ -151,6 +151,30 @@
+ #define MASK_NO_STRICT_ALIGNMENT 16384
+ #define TARGET_STRICT_ALIGNMENT  (~target_flags & MASK_NO_STRICT_ALIGNMENT)
+ 
++/* Build for ColdFire v3 */
++#define MASK_CFV3	0x8000
++#define TARGET_CFV3	(target_flags & MASK_CFV3)
++
++/* Build for ColdFire v4 */
++#define MASK_CFV4	0x10000
++#define TARGET_CFV4	(target_flags & MASK_CFV4)
++
++/* Divide support for ColdFire */
++#define MASK_CF_HWDIV	0x40000
++#define TARGET_CF_HWDIV	(target_flags & MASK_CF_HWDIV)
++
++/* Compile for mcf582 */
++#define MASK_528x	0x80000
++#define TARGET_528x (target_flags & MASK_528x)
++
++
++/* Is the target a coldfire */
++#define MASK_COLDFIRE	(MASK_5200|MASK_528x|MASK_CFV3|MASK_CFV4)
++#define TARGET_COLDFIRE	(target_flags & MASK_COLDFIRE)
++
++/* Which bits can be set by specifying a coldfire */
++#define MASK_ALL_CF_BITS	(MASK_COLDFIRE|MASK_CF_HWDIV)
++
+ /* Macro to define tables used to set the flags.
+    This is a list in braces of pairs in braces,
+    each pair being { "NAME", VALUE }
+@@ -158,16 +182,16 @@
+    An empty string NAME is used to identify the default VALUE.  */
+ 
+ #define TARGET_SWITCHES							\
+-  { { "68020", - (MASK_5200|MASK_68060|MASK_68040|MASK_68040_ONLY),	\
++  { { "68020", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY),	\
+       N_("Generate code for a 68020") },				\
+-    { "c68020", - (MASK_5200|MASK_68060|MASK_68040|MASK_68040_ONLY),	\
++    { "c68020", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY),	\
+       N_("Generate code for a 68020") },				\
+     { "68020", (MASK_68020|MASK_BITFIELD), "" },			\
+     { "c68020", (MASK_68020|MASK_BITFIELD), "" },			\
+-    { "68000", - (MASK_5200|MASK_68060|MASK_68040|MASK_68040_ONLY	\
++    { "68000", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY	\
+ 		|MASK_68020|MASK_BITFIELD|MASK_68881),			\
+       N_("Generate code for a 68000") },				\
+-    { "c68000", - (MASK_5200|MASK_68060|MASK_68040|MASK_68040_ONLY	\
++    { "c68000", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY	\
+ 		|MASK_68020|MASK_BITFIELD|MASK_68881),			\
+       N_("Generate code for a 68000") },				\
+     { "bitfield", MASK_BITFIELD,					\
+@@ -198,40 +222,56 @@
+     { "68881", MASK_68881, "" },					\
+     { "soft-float", - (MASK_FPA|MASK_SKY|MASK_68040_ONLY|MASK_68881),	\
+       N_("Generate code with library calls for floating point") },	\
+-    { "68020-40", -(MASK_5200|MASK_68060|MASK_68040_ONLY),		\
++    { "68020-40", -(MASK_ALL_CF_BITS|MASK_68060|MASK_68040_ONLY),		\
+       N_("Generate code for a 68040, without any new instructions") },	\
+     { "68020-40", (MASK_BITFIELD|MASK_68881|MASK_68020|MASK_68040), ""},\
+-    { "68020-60", -(MASK_5200|MASK_68040_ONLY),				\
++    { "68020-60", -(MASK_ALL_CF_BITS|MASK_68040_ONLY),				\
+       N_("Generate code for a 68060, without any new instructions") },	\
+     { "68020-60", (MASK_BITFIELD|MASK_68881|MASK_68020|MASK_68040	\
+ 		   |MASK_68060), "" },					\
+-    { "68030", - (MASK_5200|MASK_68060|MASK_68040|MASK_68040_ONLY),	\
++    { "68030", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY),	\
+       N_("Generate code for a 68030") },				\
+     { "68030", (MASK_68020|MASK_BITFIELD), "" },			\
+-    { "68040", - (MASK_5200|MASK_68060),				\
++    { "68040", - (MASK_ALL_CF_BITS|MASK_68060),				\
+       N_("Generate code for a 68040") },				\
+     { "68040", (MASK_68020|MASK_68881|MASK_BITFIELD			\
+ 		|MASK_68040_ONLY|MASK_68040), "" },			\
+-    { "68060", - (MASK_5200|MASK_68040),				\
++    { "68060", - (MASK_ALL_CF_BITS|MASK_68040),				\
+       N_("Generate code for a 68060") },				\
+     { "68060", (MASK_68020|MASK_68881|MASK_BITFIELD			\
+ 		|MASK_68040_ONLY|MASK_68060), "" },			\
+-    { "5200", - (MASK_68060|MASK_68040|MASK_68040_ONLY|MASK_68020	\
++    { "5200", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY|MASK_68020	\
+ 		|MASK_BITFIELD|MASK_68881),				\
+       N_("Generate code for a 520X") },					\
+     { "5200", (MASK_5200), "" },					\
++    { "5206e", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY|MASK_68020	\
++		|MASK_BITFIELD|MASK_68881),				\
++      N_("Generate code for a 5206e") },					\
++    { "5206e", (MASK_5200|MASK_CF_HWDIV), "" },					\
++    { "528x", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY|MASK_68020	\
++		|MASK_BITFIELD|MASK_68881),				\
++      N_("Generate code for a 5206e") },					\
++    { "528x", (MASK_528x|MASK_CF_HWDIV), "" },					\
++    { "5307", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY|MASK_68020	\
++		|MASK_BITFIELD|MASK_68881),				\
++      N_("Generate code for a 5307") },					\
++    { "5307", (MASK_CFV3|MASK_CF_HWDIV), "" },					\
++    { "5407", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY|MASK_68020	\
++		|MASK_BITFIELD|MASK_68881),				\
++      N_("Generate code for a 5407") },					\
++    { "5407", (MASK_CFV4|MASK_CF_HWDIV), "" },					\
+     { "68851", 0,							\
+       N_("Generate code for a 68851") },				\
+     { "no-68851", 0,							\
+       N_("Do no generate code for a 68851") },				\
+-    { "68302", - (MASK_5200|MASK_68060|MASK_68040|MASK_68040_ONLY	\
++    { "68302", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY	\
+ 		  |MASK_68020|MASK_BITFIELD|MASK_68881),		\
+       N_("Generate code for a 68302") },				\
+-    { "68332", - (MASK_5200|MASK_68060|MASK_68040|MASK_68040_ONLY	\
++    { "68332", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY	\
+ 		  |MASK_BITFIELD|MASK_68881),				\
+       N_("Generate code for a 68332") },				\
+     { "68332", MASK_68020, "" },					\
+-    { "cpu32", - (MASK_5200|MASK_68060|MASK_68040|MASK_68040_ONLY	\
++    { "cpu32", - (MASK_ALL_CF_BITS|MASK_68060|MASK_68040|MASK_68040_ONLY	\
+ 		  |MASK_BITFIELD|MASK_68881),				\
+       N_("Generate code for a cpu32") },				\
+     { "cpu32", MASK_68020, "" },					\
+@@ -933,12 +973,12 @@
+    this says how many the stack pointer really advances by.
+    On the 68000, sp@- in a byte insn really pushes a word.
+    On the 5200 (coldfire), sp@- in a byte insn pushes just a byte.  */
+-#define PUSH_ROUNDING(BYTES) (TARGET_5200 ? BYTES : ((BYTES) + 1) & ~1)
++#define PUSH_ROUNDING(BYTES) (TARGET_COLDFIRE ? BYTES : ((BYTES) + 1) & ~1)
+ 
+ /* We want to avoid trying to push bytes.  */
+ #define MOVE_BY_PIECES_P(SIZE, ALIGN) \
+   (move_by_pieces_ninsns (SIZE, ALIGN) < MOVE_RATIO \
+-    && (((SIZE) >=16 && (ALIGN) >= 16) || (TARGET_5200)))
++    && (((SIZE) >=16 && (ALIGN) >= 16) || (TARGET_COLDFIRE)))
+ 
+ /* Offset of first parameter from the argument pointer register value.  */
+ #define FIRST_PARM_OFFSET(FNDECL) 8
+@@ -1385,7 +1425,7 @@
+ /* coldfire/5200 does not allow HImode index registers.  */
+ #define LEGITIMATE_INDEX_REG_P(X)   \
+   ((GET_CODE (X) == REG && REG_OK_FOR_INDEX_P (X))	\
+-   || (! TARGET_5200					\
++   || (! TARGET_COLDFIRE					\
+        && GET_CODE (X) == SIGN_EXTEND			\
+        && GET_CODE (XEXP (X, 0)) == REG			\
+        && GET_MODE (XEXP (X, 0)) == HImode		\
+@@ -1396,12 +1436,12 @@
+ 
+ #define LEGITIMATE_INDEX_P(X)   \
+    (LEGITIMATE_INDEX_REG_P (X)				\
+-    || ((TARGET_68020 || TARGET_5200) && GET_CODE (X) == MULT \
++    || ((TARGET_68020 || TARGET_COLDFIRE) && GET_CODE (X) == MULT \
+ 	&& LEGITIMATE_INDEX_REG_P (XEXP (X, 0))		\
+ 	&& GET_CODE (XEXP (X, 1)) == CONST_INT		\
+ 	&& (INTVAL (XEXP (X, 1)) == 2			\
+ 	    || INTVAL (XEXP (X, 1)) == 4		\
+-	    || (INTVAL (XEXP (X, 1)) == 8 && !TARGET_5200))))
++	    || (INTVAL (XEXP (X, 1)) == 8 && !TARGET_COLDFIRE))))
+ 
+ /* If pic, we accept INDEX+LABEL, which is what do_tablejump makes.  */
+ #define GO_IF_LEGITIMATE_ADDRESS(MODE, X, ADDR)				\
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/m68k.md gcc-3.3.1/gcc/config/m68k/m68k.md
+--- gcc-3.3.1.orig/gcc/config/m68k/m68k.md	2003-06-12 23:56:59.000000000 +0200
++++ gcc-3.3.1/gcc/config/m68k/m68k.md	2003-07-25 00:25:30.000000000 +0200
+@@ -24,7 +24,7 @@
+ ;;- The MCF5200 "ColdFire" architecture is a reduced version of the
+ ;;- 68k ISA.  Differences include reduced support for byte and word
+ ;;- operands and the removal of BCD, bitfield, rotate, and integer
+-;;- divide instructions.  The TARGET_5200 flag turns the use of the
++;;- divide instructions.  The TARGET_COLDFIRE flag turns the use of the
+ ;;- removed opcodes and addressing modes off.
+ ;;- 
+ 
+@@ -360,7 +360,7 @@
+   /* ISI's assembler fails to handle tstl a0.  */
+   if (! ADDRESS_REG_P (operands[0]))
+ #else
+-  if (TARGET_68020 || TARGET_5200 || ! ADDRESS_REG_P (operands[0]))
++  if (TARGET_68020 || TARGET_COLDFIRE || ! ADDRESS_REG_P (operands[0]))
+ #endif
+     return \"tst%.l %0\";
+   /* If you think that the 68020 does not support tstl a0,
+@@ -519,7 +519,7 @@
+   [(set (cc0)
+         (compare (match_operand:SI 0 "nonimmediate_operand" "rKT,rKs,mSr,mSa,>")
+                  (match_operand:SI 1 "general_src_operand" "mSr,mSa,KTr,Ksr,>")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[0]) == MEM && GET_CODE (operands[1]) == MEM)
+@@ -559,7 +559,7 @@
+   [(set (cc0)
+ 	(compare (match_operand:SI 0 "nonimmediate_operand" "mrKs,r")
+ 		 (match_operand:SI 1 "general_operand" "r,mrKs")))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "*
+ {
+   if (REG_P (operands[1])
+@@ -582,14 +582,14 @@
+   [(set (cc0)
+         (compare (match_operand:HI 0 "nonimmediate_src_operand" "")
+                  (match_operand:HI 1 "general_src_operand" "")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "m68k_last_compare_had_fp_operands = 0;")
+ 
+ (define_insn ""
+   [(set (cc0)
+         (compare (match_operand:HI 0 "nonimmediate_src_operand" "rnmS,d,n,mS,>")
+                  (match_operand:HI 1 "general_src_operand" "d,rnmS,mS,n,>")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[0]) == MEM && GET_CODE (operands[1]) == MEM)
+@@ -618,14 +618,14 @@
+   [(set (cc0)
+         (compare (match_operand:QI 0 "nonimmediate_src_operand" "")
+                  (match_operand:QI 1 "general_src_operand" "")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "m68k_last_compare_had_fp_operands = 0;")
+ 
+ (define_insn ""
+   [(set (cc0)
+         (compare (match_operand:QI 0 "nonimmediate_src_operand" "dn,dmS,>")
+                  (match_operand:QI 1 "general_src_operand" "dmS,nd,>")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[0]) == MEM && GET_CODE (operands[1]) == MEM)
+@@ -769,7 +769,7 @@
+ 			    (const_int 1)
+ 			    (minus:SI (const_int 7)
+ 				      (match_operand:SI 1 "general_operand" "di"))))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "* { return output_btst (operands, operands[1], operands[0], insn, 7); }")
+ 
+ ;; This is the same as the above pattern except for the constraints.  The 'i'
+@@ -780,7 +780,7 @@
+ 			    (const_int 1)
+ 			    (minus:SI (const_int 7)
+ 				      (match_operand:SI 1 "general_operand" "d"))))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "* { return output_btst (operands, operands[1], operands[0], insn, 7); }")
+ 
+ (define_insn ""
+@@ -821,7 +821,7 @@
+   [(set (cc0) (zero_extract (match_operand:QI 0 "memory_operand" "m")
+ 			    (const_int 1)
+ 			    (match_operand:SI 1 "const_int_operand" "n")))]
+-  "(unsigned) INTVAL (operands[1]) < 8 && !TARGET_5200"
++  "(unsigned) INTVAL (operands[1]) < 8 && !TARGET_COLDFIRE"
+   "*
+ {
+   operands[1] = GEN_INT (7 - INTVAL (operands[1]));
+@@ -832,7 +832,7 @@
+   [(set (cc0) (zero_extract (match_operand:SI 0 "register_operand" "do")
+ 			    (const_int 1)
+ 			    (match_operand:SI 1 "const_int_operand" "n")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[0]) == MEM)
+@@ -853,7 +853,7 @@
+   [(set (cc0) (zero_extract (match_operand:SI 0 "register_operand" "dQ")
+ 			    (const_int 1)
+ 			    (match_operand:SI 1 "const_int_operand" "n")))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[0]) == MEM)
+@@ -900,7 +900,7 @@
+ 	(const_int 0))]
+   ;; clr insns on 68000 read before writing.
+   ;; This isn't so on the 68010, but we have no TARGET_68010.
+-  "((TARGET_68020 || TARGET_5200)
++  "((TARGET_68020 || TARGET_COLDFIRE)
+     || !(GET_CODE (operands[0]) == MEM && MEM_VOLATILE_P (operands[0])))"
+   "*
+ {
+@@ -924,7 +924,7 @@
+ 	}
+     }
+   /* moveq is faster on the 68000.  */
+-  if (DATA_REG_P (operands[0]) && (!TARGET_68020 && !TARGET_5200))
++  if (DATA_REG_P (operands[0]) && (!TARGET_68020 && !TARGET_COLDFIRE))
+ #if defined(MOTOROLA) && !defined(CRDS)
+     return \"moveq%.l %#0,%0\";
+ #else
+@@ -980,7 +980,7 @@
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=g,d,a<,y,!*x*r*m")
+         (match_operand:SI 1 "general_src_operand" "daymSKT,n,i,g,*x*r*m"))]
+ 
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (which_alternative == 4)
+@@ -993,7 +993,7 @@
+ (define_insn ""
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=r<Q>,g")
+ 	(match_operand:SI 1 "general_operand" "g,r<Q>"))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "* return output_move_simode (operands);")
+ 
+ ;; Special case of fullword move, where we need to get a non-GOT PIC
+@@ -1018,13 +1018,13 @@
+ (define_insn ""
+   [(set (match_operand:HI 0 "nonimmediate_operand" "=g")
+         (match_operand:HI 1 "general_src_operand" "gS"))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "* return output_move_himode (operands);")
+ 
+  (define_insn ""
+   [(set (match_operand:HI 0 "nonimmediate_operand" "=r<Q>,g")
+ 	(match_operand:HI 1 "general_operand" "g,r<Q>"))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "* return output_move_himode (operands);")
+ 
+ (define_expand "movstricthi"
+@@ -1036,13 +1036,13 @@
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+dm"))
+ 	(match_operand:HI 1 "general_src_operand" "rmSn"))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "* return output_move_stricthi (operands);")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+d,m"))
+ 	(match_operand:HI 1 "general_src_operand" "rmn,r"))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "* return output_move_stricthi (operands);")
+ 
+ (define_expand "movqi"
+@@ -1054,13 +1054,13 @@
+ (define_insn ""
+   [(set (match_operand:QI 0 "nonimmediate_operand" "=d,*a,m")
+ 	(match_operand:QI 1 "general_src_operand" "dmSi*a,di*a,dmSi"))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "* return output_move_qimode (operands);")
+ 
+ (define_insn ""
+   [(set (match_operand:QI 0 "nonimmediate_operand" "=d<Q>,dm,d*a")
+ 	(match_operand:QI 1 "general_src_operand" "dmi,d<Q>,di*a"))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "* return output_move_qimode (operands);")
+ 
+ (define_expand "movstrictqi"
+@@ -1072,20 +1072,20 @@
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+dm"))
+ 	(match_operand:QI 1 "general_src_operand" "dmSn"))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "* return output_move_strictqi (operands);")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+d,m"))
+ 	(match_operand:QI 1 "general_src_operand" "dmn,d"))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "* return output_move_strictqi (operands);")
+ 
+ (define_expand "pushqi1"
+   [(set (reg:SI 15) (plus:SI (reg:SI 15) (const_int -2)))
+    (set (mem:QI (plus:SI (reg:SI 15) (const_int 1)))
+ 	(match_operand:QI 0 "general_operand" ""))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "")
+ 
+ (define_expand "movsf"
+@@ -1099,7 +1099,7 @@
+ 	(match_operand:SF 1 "general_operand" "rmfF,xH,rmF,y,rm,x"))]
+ ;  [(set (match_operand:SF 0 "nonimmediate_operand" "=rmf")
+ ;	(match_operand:SF 1 "general_operand" "rmfF"))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (which_alternative >= 4)
+@@ -1140,7 +1140,7 @@
+   if (operands[1] == CONST0_RTX (SFmode)
+       /* clr insns on 68000 read before writing.
+ 	 This isn't so on the 68010, but we have no TARGET_68010.  */
+-      && ((TARGET_68020 || TARGET_5200)
++      && ((TARGET_68020 || TARGET_COLDFIRE)
+ 	  || !(GET_CODE (operands[0]) == MEM && MEM_VOLATILE_P (operands[0]))))
+     {
+       if (ADDRESS_REG_P (operands[0]))
+@@ -1163,7 +1163,7 @@
+ 	    }
+ 	}
+       /* moveq is faster on the 68000.  */
+-      if (DATA_REG_P (operands[0]) && !(TARGET_68020 || TARGET_5200))
++      if (DATA_REG_P (operands[0]) && !(TARGET_68020 || TARGET_COLDFIRE))
+ 	{
+ #if defined(MOTOROLA) && !defined(CRDS)
+ 	  return \"moveq%.l %#0,%0\";
+@@ -1179,7 +1179,7 @@
+ (define_insn ""
+   [(set (match_operand:SF 0 "nonimmediate_operand" "=r,g")
+ 	(match_operand:SF 1 "general_operand" "g,r"))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "* return \"move%.l %1,%0\";")
+ 
+ (define_expand "movdf"
+@@ -1195,7 +1195,7 @@
+ 				"*rf,m,0,*rofE<>,*rmE,y,xH,*rm,x"))]
+ ;  [(set (match_operand:DF 0 "nonimmediate_operand" "=rm,&rf,&rof<>")
+ ;	(match_operand:DF 1 "general_operand" "rf,m,rofF<>"))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (which_alternative == 7)
+@@ -1248,7 +1248,7 @@
+ (define_insn ""
+   [(set (match_operand:DF 0 "nonimmediate_operand" "=r,g")
+ 	(match_operand:DF 1 "general_operand" "g,r"))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "* return output_move_double (operands);")
+ 
+ (define_expand "movxf"
+@@ -1319,7 +1319,7 @@
+ (define_insn ""
+   [(set (match_operand:XF 0 "nonimmediate_operand" "=rm,rf,&rof<>")
+ 	(match_operand:XF 1 "nonimmediate_operand" "rf,m,rof<>"))]
+-  "! TARGET_68881 && ! TARGET_5200"
++  "! TARGET_68881 && ! TARGET_COLDFIRE"
+   "*
+ {
+   if (FP_REG_P (operands[0]))
+@@ -1360,7 +1360,7 @@
+ (define_insn ""
+   [(set (match_operand:XF 0 "nonimmediate_operand" "=r,g")
+ 	(match_operand:XF 1 "nonimmediate_operand" "g,r"))]
+-  "! TARGET_68881 && TARGET_5200"
++  "! TARGET_68881 && TARGET_COLDFIRE"
+   "* return output_move_double (operands);")
+ 
+ (define_expand "movdi"
+@@ -1379,7 +1379,7 @@
+ ;	(match_operand:DI 1 "general_operand" "r,m,roi<>,fF,rfmF,rmi,y,rm,x"))]
+ ;  [(set (match_operand:DI 0 "nonimmediate_operand" "=rm,&rf,&ro<>,!&rm,!&f")
+ ;	(match_operand:DI 1 "general_operand" "r,m,roi<>,fF,rfF"))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (which_alternative == 8)
+@@ -1419,7 +1419,7 @@
+ (define_insn ""
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=r,g")
+ 	(match_operand:DI 1 "general_operand" "g,r"))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "* return output_move_double (operands);")
+ 
+ ;; Thus goes after the move instructions
+@@ -1534,7 +1534,7 @@
+ (define_insn "*zero_extendsidi2_cf"
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=r,m")
+     (zero_extend:DI (match_operand:SI 1 "general_operand" "rm,r")))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -1558,7 +1558,7 @@
+ (define_insn "*zero_extendsidi2"
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=rm")
+     (zero_extend:DI (match_operand:SI 1 "general_operand" "rm")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -1659,9 +1659,9 @@
+     {
+       if (GET_CODE (operands[1]) == REG
+ 	  && REGNO (operands[0]) == REGNO (operands[1]))
+-	return (!TARGET_5200 ? \"and%.w %#0xFF,%0\" : \"and%.l %#0xFF,%0\");
++	return (!TARGET_COLDFIRE ? \"and%.w %#0xFF,%0\" : \"and%.l %#0xFF,%0\");
+       if (reg_mentioned_p (operands[0], operands[1]))
+-	return (!TARGET_5200 ? \"move%.b %1,%0\;and%.w %#0xFF,%0\" 
++	return (!TARGET_COLDFIRE ? \"move%.b %1,%0\;and%.w %#0xFF,%0\" 
+ 			     : \"move%.b %1,%0\;and%.l %#0xFF,%0\");
+       return \"clr%.w %0\;move%.b %1,%0\";
+     }
+@@ -1751,7 +1751,7 @@
+ {
+   CC_STATUS_INIT;
+   operands[2] = gen_rtx_REG (SImode, REGNO (operands[0]) + 1);
+-  if (TARGET_68020 || TARGET_5200)
++  if (TARGET_68020 || TARGET_COLDFIRE)
+     return \"move%.b %1,%2\;extb%.l %2\;smi %0\;extb%.l %0\";
+   else
+     return \"move%.b %1,%2\;ext%.w %0\;ext%.l %2\;move%.l %2,%0\;smi %0\";
+@@ -1766,7 +1766,7 @@
+ {
+   CC_STATUS_INIT;
+   operands[2] = gen_rtx_REG (SImode, REGNO (operands[0]) + 1);
+-  if (TARGET_68020 || TARGET_5200)
++  if (TARGET_68020 || TARGET_COLDFIRE)
+     return \"move%.w %1,%2\;ext%.l %2\;smi %0\;extb%.l %0\";
+   else
+     return \"move%.w %1,%2\;ext%.l %2\;smi %0\;ext%.w %0\;ext%.l %0\";
+@@ -1781,7 +1781,7 @@
+ {
+   CC_STATUS_INIT;
+   operands[2] = gen_rtx_REG (SImode, REGNO (operands[0]) + 1);
+-  if (TARGET_68020 || TARGET_5200)
++  if (TARGET_68020 || TARGET_COLDFIRE)
+     return \"move%.l %1,%2\;smi %0\;extb%.l %0\";
+   else
+     return \"move%.l %1,%2\;smi %0\;ext%.w %0\;ext%.l %0\";
+@@ -1813,7 +1813,7 @@
+     output_asm_insn (\"add%.l %2,%3\", operands);
+   else
+     output_asm_insn (\"move%.l %2,%3\;add%.l %1,%3\", operands);
+-  if (TARGET_68020 || TARGET_5200)
++  if (TARGET_68020 || TARGET_COLDFIRE)
+     return \"smi %0\;extb%.l %0\";
+   else
+     return \"smi %0\;ext%.w %0\;ext%.l %0\";
+@@ -1840,7 +1840,7 @@
+ (define_insn "extendqisi2"
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
+ 	(sign_extend:SI (match_operand:QI 1 "nonimmediate_operand" "0")))]
+-  "TARGET_68020 || TARGET_5200"
++  "TARGET_68020 || TARGET_COLDFIRE"
+   "extb%.l %0")
+ 
+ ;; Conversions between float and double.
+@@ -2139,7 +2139,7 @@
+    && GET_CODE (XEXP (operands[1], 0)) == PRE_DEC)
+     output_asm_insn (\"move%.l %4,%3\", operands);
+   output_asm_insn (\"move%.l %1,%0\;smi %2\", operands);
+-  if (TARGET_68020 || TARGET_5200)
++  if (TARGET_68020 || TARGET_COLDFIRE)
+     output_asm_insn (\"extb%.l %2\", operands);
+   else
+     output_asm_insn (\"ext%.w %2\;ext%.l %2\", operands);
+@@ -2156,7 +2156,7 @@
+             (const_int 32))
+         (match_operand:DI 2 "general_operand" "0,0,0,0")))
+    (clobber (match_scratch:SI 3 "=&d,X,a,?d"))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -2348,14 +2348,14 @@
+                  (match_operand:SI 2 "general_src_operand" "dIKLT,rJK,a,mSrIKLT,mSrIKLs")))]
+ 
+ 
+-  "! TARGET_5200"
++  "! TARGET_COLDFIRE"
+   "* return output_addsi3 (operands);")
+ 
+ (define_insn "*addsi3_5200"
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=m,?a,?a,r")
+ 	(plus:SI (match_operand:SI 1 "general_operand" "%0,a,rJK,0")
+ 		 (match_operand:SI 2 "general_src_operand" "d,rJK,a,mrIKLs")))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "* return output_addsi3 (operands);")
+ 
+ (define_insn ""
+@@ -2363,14 +2363,14 @@
+ 	(plus:SI (match_operand:SI 1 "general_operand" "0")
+ 		 (sign_extend:SI
+ 		  (match_operand:HI 2 "nonimmediate_src_operand" "rmS"))))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "add%.w %2,%0")
+ 
+ (define_insn "addhi3"
+   [(set (match_operand:HI 0 "nonimmediate_operand" "=m,r")
+ 	(plus:HI (match_operand:HI 1 "general_operand" "%0,0")
+ 		 (match_operand:HI 2 "general_src_operand" "dn,rmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[2]) == CONST_INT)
+@@ -2432,7 +2432,7 @@
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+m,d"))
+ 	(plus:HI (match_dup 0)
+ 		 (match_operand:HI 1 "general_src_operand" "dn,rmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[1]) == CONST_INT)
+@@ -2488,7 +2488,7 @@
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+m,d"))
+ 	(plus:HI (match_operand:HI 1 "general_src_operand" "dn,rmSn")
+ 		 (match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[1]) == CONST_INT)
+@@ -2544,7 +2544,7 @@
+   [(set (match_operand:QI 0 "nonimmediate_operand" "=m,d")
+ 	(plus:QI (match_operand:QI 1 "general_operand" "%0,0")
+ 		 (match_operand:QI 2 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+ #ifndef NO_ADDSUB_Q
+@@ -2570,7 +2570,7 @@
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+m,d"))
+ 	(plus:QI (match_dup 0)
+ 		 (match_operand:QI 1 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+ #ifndef NO_ADDSUB_Q
+@@ -2596,7 +2596,7 @@
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+m,d"))
+ 	(plus:QI (match_operand:QI 1 "general_src_operand" "dn,dmSn")
+ 		 (match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+ #ifndef NO_ADDSUB_Q
+@@ -2738,7 +2738,7 @@
+         (ashift:DI (sign_extend:DI (match_operand:HI 2 "general_operand" "rm,rm,rm,rm"))
+             (const_int 32))))
+    (clobber (match_scratch:SI 3 "=&d,X,a,?d"))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -2872,35 +2872,35 @@
+ 	(minus:SI (match_operand:SI 1 "general_operand" "0")
+ 		  (sign_extend:SI
+ 		   (match_operand:HI 2 "nonimmediate_src_operand" "rmS"))))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "sub%.w %2,%0")
+ 
+ (define_insn "subhi3"
+   [(set (match_operand:HI 0 "nonimmediate_operand" "=m,r")
+ 	(minus:HI (match_operand:HI 1 "general_operand" "0,0")
+ 		  (match_operand:HI 2 "general_src_operand" "dn,rmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "sub%.w %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+m,d"))
+ 	(minus:HI (match_dup 0)
+ 		  (match_operand:HI 1 "general_src_operand" "dn,rmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "sub%.w %1,%0")
+ 
+ (define_insn "subqi3"
+   [(set (match_operand:QI 0 "nonimmediate_operand" "=m,d")
+ 	(minus:QI (match_operand:QI 1 "general_operand" "0,0")
+ 		  (match_operand:QI 2 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "sub%.b %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+m,d"))
+ 	(minus:QI (match_dup 0)
+ 		  (match_operand:QI 1 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "sub%.b %1,%0")
+ 
+ (define_expand "subdf3"
+@@ -3066,7 +3066,7 @@
+   [(set (match_operand:SI 0 "nonimmediate_operand" "")
+ 	(mult:SI (match_operand:SI 1 "general_operand" "")
+ 		 (match_operand:SI 2 "general_operand" "")))]
+-  "TARGET_68020 || TARGET_5200"
++  "TARGET_68020 || TARGET_COLDFIRE"
+   "")
+ 
+ (define_insn ""
+@@ -3081,7 +3081,7 @@
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
+ 	(mult:SI (match_operand:SI 1 "general_operand" "%0")
+ 		 (match_operand:SI 2 "general_operand" "d<Q>")))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "muls%.l %2,%0")
+ 
+ (define_insn "umulhisi3"
+@@ -3127,7 +3127,7 @@
+ 	  (truncate:SI (lshiftrt:DI (mult:DI (zero_extend:DI (match_dup 1))
+ 					     (zero_extend:DI (match_dup 2)))
+ 				    (const_int 32))))])]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE"
+   "")
+ 
+ (define_insn ""
+@@ -3138,7 +3138,7 @@
+ 	(truncate:SI (lshiftrt:DI (mult:DI (zero_extend:DI (match_dup 1))
+ 					   (zero_extend:DI (match_dup 2)))
+ 				  (const_int 32))))]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE"
+   "mulu%.l %2,%3:%0")
+ 
+ ; Match immediate case.  For 2.4 only match things < 2^31.
+@@ -3153,7 +3153,7 @@
+ 	(truncate:SI (lshiftrt:DI (mult:DI (zero_extend:DI (match_dup 1))
+ 					   (match_dup 2))
+ 				  (const_int 32))))]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE
+    && (unsigned) INTVAL (operands[2]) <= 0x7fffffff"
+   "mulu%.l %2,%3:%0")
+ 
+@@ -3166,7 +3166,7 @@
+ 	  (truncate:SI (lshiftrt:DI (mult:DI (sign_extend:DI (match_dup 1))
+ 					     (sign_extend:DI (match_dup 2)))
+ 				    (const_int 32))))])]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE"
+   "")
+ 
+ (define_insn ""
+@@ -3177,7 +3177,7 @@
+ 	(truncate:SI (lshiftrt:DI (mult:DI (sign_extend:DI (match_dup 1))
+ 					   (sign_extend:DI (match_dup 2)))
+ 				  (const_int 32))))]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE"
+   "muls%.l %2,%3:%0")
+ 
+ (define_insn ""
+@@ -3188,7 +3188,7 @@
+ 	(truncate:SI (lshiftrt:DI (mult:DI (sign_extend:DI (match_dup 1))
+ 					   (match_dup 2))
+ 				  (const_int 32))))]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE"
+   "muls%.l %2,%3:%0")
+ 
+ (define_expand "umulsi3_highpart"
+@@ -3200,7 +3200,7 @@
+ 		     (zero_extend:DI (match_operand:SI 2 "general_operand" "")))
+ 	    (const_int 32))))
+      (clobber (match_dup 3))])]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE"
+   "
+ {
+   operands[3] = gen_reg_rtx (SImode);
+@@ -3225,7 +3225,7 @@
+ 		   (zero_extend:DI (match_operand:SI 3 "nonimmediate_operand" "dm")))
+ 	  (const_int 32))))
+    (clobber (match_operand:SI 1 "register_operand" "=d"))]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE"
+   "mulu%.l %3,%0:%1")
+ 
+ (define_insn "const_umulsi3_highpart"
+@@ -3236,7 +3236,7 @@
+ 		   (match_operand:DI 3 "const_uint32_operand" "n"))
+ 	  (const_int 32))))
+    (clobber (match_operand:SI 1 "register_operand" "=d"))]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE"
+   "mulu%.l %3,%0:%1")
+ 
+ (define_expand "smulsi3_highpart"
+@@ -3248,7 +3248,7 @@
+ 		     (sign_extend:DI (match_operand:SI 2 "general_operand" "")))
+ 	    (const_int 32))))
+      (clobber (match_dup 3))])]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE"
+   "
+ {
+   operands[3] = gen_reg_rtx (SImode);
+@@ -3269,7 +3269,7 @@
+ 		   (sign_extend:DI (match_operand:SI 3 "nonimmediate_operand" "dm")))
+ 	  (const_int 32))))
+    (clobber (match_operand:SI 1 "register_operand" "=d"))]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE"
+   "muls%.l %3,%0:%1")
+ 
+ (define_insn "const_smulsi3_highpart"
+@@ -3280,7 +3280,7 @@
+ 		   (match_operand:DI 3 "const_sint32_operand" "n"))
+ 	  (const_int 32))))
+    (clobber (match_operand:SI 1 "register_operand" "=d"))]
+-  "TARGET_68020 && !TARGET_68060 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_68060 && !TARGET_COLDFIRE"
+   "muls%.l %3,%0:%1")
+ 
+ (define_expand "muldf3"
+@@ -3574,13 +3574,40 @@
+ 
+ ;; Remainder instructions.
+ 
+-(define_insn "divmodsi4"
++(define_expand "divmodsi4"
++  [(parallel
++    [(set (match_operand:SI 0 "nonimmediate_operand" "")
++          (div:SI (match_operand:SI 1 "general_operand" "")
++                  (match_operand:SI 2 "general_src_operand" "")))
++     (set (match_operand:SI 3 "nonimmediate_operand" "")
++          (mod:SI (match_dup 1) (match_dup 2)))])]
++  "TARGET_68020 || TARGET_CF_HWDIV"
++  "")
++
++(define_insn ""
++  [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
++	(div:SI (match_operand:SI 1 "general_operand" "0")
++		(match_operand:SI 2 "general_src_operand" "d<Q>U")))
++   (set (match_operand:SI 3 "nonimmediate_operand" "=&d")
++	(mod:SI (match_dup 1) (match_dup 2)))]
++  "TARGET_CF_HWDIV"
++  "*
++{
++  if (find_reg_note (insn, REG_UNUSED, operands[3]))
++    return \"divs%.l %2,%0\";
++  else if (find_reg_note (insn, REG_UNUSED, operands[0]))
++    return \"rems%.l %2,%3:%0\";
++  else
++    return \"rems%.l %2,%3:%0\;divs%.l %2,%0\";
++}")
++
++(define_insn ""
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
+ 	(div:SI (match_operand:SI 1 "general_operand" "0")
+ 		(match_operand:SI 2 "general_src_operand" "dmSTK")))
+    (set (match_operand:SI 3 "nonimmediate_operand" "=d")
+ 	(mod:SI (match_dup 1) (match_dup 2)))]
+-  "TARGET_68020 && !TARGET_5200"
++  "TARGET_68020"
+   "*
+ {
+   if (find_reg_note (insn, REG_UNUSED, operands[3]))
+@@ -3589,13 +3616,40 @@
+     return \"divsl%.l %2,%3:%0\";
+ }")
+ 
+-(define_insn "udivmodsi4"
++(define_expand "udivmodsi4"
++  [(parallel
++    [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
++          (udiv:SI (match_operand:SI 1 "general_operand" "0")
++                   (match_operand:SI 2 "general_src_operand" "dmSTK")))
++     (set (match_operand:SI 3 "nonimmediate_operand" "=d")
++          (umod:SI (match_dup 1) (match_dup 2)))])]
++  "TARGET_68020 || TARGET_CF_HWDIV"
++  "")
++
++(define_insn ""
++  [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
++	(udiv:SI (match_operand:SI 1 "general_operand" "0")
++		 (match_operand:SI 2 "general_src_operand" "d<Q>U")))
++   (set (match_operand:SI 3 "nonimmediate_operand" "=&d")
++	(umod:SI (match_dup 1) (match_dup 2)))]
++  "TARGET_CF_HWDIV"
++  "*
++{
++  if (find_reg_note (insn, REG_UNUSED, operands[3]))
++    return \"divu%.l %2,%0\";
++  else if (find_reg_note (insn, REG_UNUSED, operands[0]))
++    return \"remu%.l %2,%3:%0\";
++  else
++    return \"remu%.l %2,%3:%0\;divu%.l %2,%0\";
++}")
++
++(define_insn ""
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
+ 	(udiv:SI (match_operand:SI 1 "general_operand" "0")
+ 		 (match_operand:SI 2 "general_src_operand" "dmSTK")))
+    (set (match_operand:SI 3 "nonimmediate_operand" "=d")
+ 	(umod:SI (match_dup 1) (match_dup 2)))]
+-  "TARGET_68020 && !TARGET_5200"
++  "TARGET_68020 && !TARGET_COLDFIRE"
+   "*
+ {
+   if (find_reg_note (insn, REG_UNUSED, operands[3]))
+@@ -3610,7 +3664,7 @@
+ 		(match_operand:HI 2 "general_src_operand" "dmSKT")))
+    (set (match_operand:HI 3 "nonimmediate_operand" "=d")
+ 	(mod:HI (match_dup 1) (match_dup 2)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE || TARGET_CF_HWDIV"
+   "*
+ {
+ #ifdef MOTOROLA
+@@ -3633,7 +3687,7 @@
+ 		 (match_operand:HI 2 "general_src_operand" "dmSKT")))
+    (set (match_operand:HI 3 "nonimmediate_operand" "=d")
+ 	(umod:HI (match_dup 1) (match_dup 2)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE || TARGET_CF_HWDIV"
+   "*
+ {
+ #ifdef MOTOROLA
+@@ -3657,7 +3711,7 @@
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=o,d")
+ 	(and:DI (match_operand:DI 1 "general_operand" "%0,0")
+ 		(match_operand:DI 2 "general_operand" "dn,don")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -3734,7 +3788,7 @@
+   [(set (match_operand:SI 0 "not_sp_operand" "=m,d")
+ 	(and:SI (match_operand:SI 1 "general_operand" "%0,0")
+ 		(match_operand:SI 2 "general_src_operand" "dKT,dmSM")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   return output_andsi3 (operands);
+@@ -3744,49 +3798,49 @@
+   [(set (match_operand:SI 0 "not_sp_operand" "=m,d")
+ 	(and:SI (match_operand:SI 1 "general_operand" "%0,0")
+ 		(match_operand:SI 2 "general_src_operand" "d,dmsK")))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "and%.l %2,%0")
+ 
+ (define_insn "andhi3"
+   [(set (match_operand:HI 0 "nonimmediate_operand" "=m,d")
+ 	(and:HI (match_operand:HI 1 "general_operand" "%0,0")
+ 		(match_operand:HI 2 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "and%.w %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+m,d"))
+ 	(and:HI (match_dup 0)
+ 		(match_operand:HI 1 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "and%.w %1,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+m,d"))
+ 	(and:HI (match_operand:HI 1 "general_src_operand" "dn,dmSn")
+ 		(match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "and%.w %1,%0")
+ 
+ (define_insn "andqi3"
+   [(set (match_operand:QI 0 "nonimmediate_operand" "=m,d")
+ 	(and:QI (match_operand:QI 1 "general_operand" "%0,0")
+ 		(match_operand:QI 2 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "and%.b %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+m,d"))
+ 	(and:QI (match_dup 0)
+ 		(match_operand:QI 1 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "and%.b %1,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+m,d"))
+ 	(and:QI (match_operand:QI 1 "general_src_operand" "dn,dmSn")
+ 		(match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "and%.b %1,%0")
+ 
+ ;; inclusive-or instructions
+@@ -3795,7 +3849,7 @@
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=o,d")
+     (ior:DI (zero_extend:DI (match_operand 1 "general_operand" "dn,dmn"))
+         (match_operand:DI 2 "general_operand" "0,0")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   int byte_mode;
+@@ -3822,7 +3876,7 @@
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=o,d")
+ 	(ior:DI (match_operand:DI 1 "general_operand" "%0,0")
+ 		(match_operand:DI 2 "general_operand" "dn,don")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -3899,7 +3953,7 @@
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=m,d")
+ 	(ior:SI (match_operand:SI 1 "general_operand" "%0,0")
+                 (match_operand:SI 2 "general_src_operand" "dKT,dmSMT")))]
+-  "! TARGET_5200"
++  "! TARGET_COLDFIRE"
+   "*
+ {
+   return output_iorsi3 (operands);
+@@ -3909,49 +3963,49 @@
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=m,d")
+ 	(ior:SI (match_operand:SI 1 "general_operand" "%0,0")
+ 		(match_operand:SI 2 "general_src_operand" "d,dmsK")))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "or%.l %2,%0")
+ 
+ (define_insn "iorhi3"
+   [(set (match_operand:HI 0 "nonimmediate_operand" "=m,d")
+ 	(ior:HI (match_operand:HI 1 "general_operand" "%0,0")
+ 		(match_operand:HI 2 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "or%.w %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+m,d"))
+ 	(ior:HI (match_dup 0)
+ 		(match_operand:HI 1 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "or%.w %1,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+m,d"))
+ 	(ior:HI (match_operand:HI 1 "general_src_operand" "dn,dmSn")
+ 		(match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "or%.w %1,%0")
+ 
+ (define_insn "iorqi3"
+   [(set (match_operand:QI 0 "nonimmediate_operand" "=m,d")
+ 	(ior:QI (match_operand:QI 1 "general_operand" "%0,0")
+                 (match_operand:QI 2 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "or%.b %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+m,d"))
+ 	(ior:QI (match_dup 0)
+                 (match_operand:QI 1 "general_src_operand" "dn,dmSn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "or%.b %1,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+m,d"))
+         (ior:QI (match_operand:QI 1 "general_src_operand" "dn,dmSn")
+ 		(match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "or%.b %1,%0")
+ 
+ ;; On all 68k models, this makes faster code in a special case.
+@@ -3978,7 +4032,7 @@
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=o,d")
+     (ior:SI (zero_extend:SI (match_operand 1 "general_operand" "dn,dmn"))
+         (match_operand:SI 2 "general_operand" "0,0")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   int byte_mode;
+@@ -4001,7 +4055,7 @@
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=od")
+ 	(xor:DI (match_operand:DI 1 "general_operand" "%0")
+ 		(match_operand:DI 2 "general_operand" "dn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -4082,7 +4136,7 @@
+ 	(xor:SI (match_operand:SI 1 "general_operand" "%0,0")
+                 (match_operand:SI 2 "general_operand" "di,dKT")))]
+ 
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   return output_xorsi3 (operands);
+@@ -4092,49 +4146,49 @@
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=dm,d")
+ 	(xor:SI (match_operand:SI 1 "general_operand" "%0,0")
+ 		(match_operand:SI 2 "general_operand" "d,Ks")))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "eor%.l %2,%0")
+ 
+ (define_insn "xorhi3"
+   [(set (match_operand:HI 0 "nonimmediate_operand" "=dm")
+ 	(xor:HI (match_operand:HI 1 "general_operand" "%0")
+ 		(match_operand:HI 2 "general_operand" "dn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "eor%.w %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+dm"))
+ 	(xor:HI (match_dup 0)
+ 		(match_operand:HI 1 "general_operand" "dn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "eor%.w %1,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+dm"))
+ 	(xor:HI (match_operand:HI 1 "general_operand" "dn")
+ 		(match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "eor%.w %1,%0")
+ 
+ (define_insn "xorqi3"
+   [(set (match_operand:QI 0 "nonimmediate_operand" "=dm")
+ 	(xor:QI (match_operand:QI 1 "general_operand" "%0")
+ 		(match_operand:QI 2 "general_operand" "dn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "eor%.b %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+dm"))
+ 	(xor:QI (match_dup 0)
+ 		(match_operand:QI 1 "general_operand" "dn")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "eor%.b %1,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+dm"))
+ 	(xor:QI (match_operand:QI 1 "general_operand" "dn")
+ 		(match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "eor%.b %1,%0")
+ 
+ ;; negation instructions
+@@ -4145,7 +4199,7 @@
+   ""
+   "
+ {
+-  if (TARGET_5200)
++  if (TARGET_COLDFIRE)
+     emit_insn (gen_negdi2_5200 (operands[0], operands[1]));
+   else
+     emit_insn (gen_negdi2_internal (operands[0], operands[1]));
+@@ -4155,7 +4209,7 @@
+ (define_insn "negdi2_internal"
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=<,do,!*a")
+ 	(neg:DI (match_operand:DI 1 "general_operand" "0,0,0")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (which_alternative == 0)
+@@ -4173,7 +4227,7 @@
+ (define_insn "negdi2_5200"
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=d")
+ 	(neg:DI (match_operand:DI 1 "general_operand" "0")))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "*
+ {
+   operands[1] = gen_rtx_REG (SImode, REGNO (operands[0]) + 1);
+@@ -4186,7 +4240,7 @@
+   ""
+   "
+ {
+-  if (TARGET_5200)
++  if (TARGET_COLDFIRE)
+     emit_insn (gen_negsi2_5200 (operands[0], operands[1]));
+   else
+     emit_insn (gen_negsi2_internal (operands[0], operands[1]));
+@@ -4196,37 +4250,37 @@
+ (define_insn "negsi2_internal"
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=dm")
+ 	(neg:SI (match_operand:SI 1 "general_operand" "0")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "neg%.l %0")
+ 
+ (define_insn "negsi2_5200"
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
+ 	(neg:SI (match_operand:SI 1 "general_operand" "0")))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "neg%.l %0")
+ 
+ (define_insn "neghi2"
+   [(set (match_operand:HI 0 "nonimmediate_operand" "=dm")
+ 	(neg:HI (match_operand:HI 1 "general_operand" "0")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "neg%.w %0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+dm"))
+ 	(neg:HI (match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "neg%.w %0")
+ 
+ (define_insn "negqi2"
+   [(set (match_operand:QI 0 "nonimmediate_operand" "=dm")
+ 	(neg:QI (match_operand:QI 1 "general_operand" "0")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "neg%.b %0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+dm"))
+ 	(neg:QI (match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "neg%.b %0")
+ 
+ ;; If using software floating point, just flip the sign bit.
+@@ -4466,7 +4520,7 @@
+ (define_insn "one_cmpldi2"
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=dm")
+ 	(not:DI (match_operand:DI 1 "general_operand" "0")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -4486,7 +4540,7 @@
+   ""
+   "
+ {
+-  if (TARGET_5200)
++  if (TARGET_COLDFIRE)
+     emit_insn (gen_one_cmplsi2_5200 (operands[0], operands[1]));
+   else
+     emit_insn (gen_one_cmplsi2_internal (operands[0], operands[1]));
+@@ -4496,37 +4550,37 @@
+ (define_insn "one_cmplsi2_internal"
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=dm")
+ 	(not:SI (match_operand:SI 1 "general_operand" "0")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "not%.l %0")
+ 
+ (define_insn "one_cmplsi2_5200"
+   [(set (match_operand:SI 0 "nonimmediate_operand" "=d")
+ 	(not:SI (match_operand:SI 1 "general_operand" "0")))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "not%.l %0")
+ 
+ (define_insn "one_cmplhi2"
+   [(set (match_operand:HI 0 "nonimmediate_operand" "=dm")
+ 	(not:HI (match_operand:HI 1 "general_operand" "0")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "not%.w %0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "nonimmediate_operand" "+dm"))
+ 	(not:HI (match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "not%.w %0")
+ 
+ (define_insn "one_cmplqi2"
+   [(set (match_operand:QI 0 "nonimmediate_operand" "=dm")
+ 	(not:QI (match_operand:QI 1 "general_operand" "0")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "not%.b %0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "nonimmediate_operand" "+dm"))
+ 	(not:QI (match_dup 0)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "not%.b %0")
+ 
+ ;; arithmetic shift instructions
+@@ -4610,7 +4664,7 @@
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=d")
+ 	(ashift:DI (match_operand:DI 1 "general_operand" "0")
+ 		     (match_operand 2 "const_int_operand" "n")))]
+-  "(!TARGET_5200
++  "(!TARGET_COLDFIRE
+     && ((INTVAL (operands[2]) >= 1 && INTVAL (operands[2]) <= 3)
+ 	|| INTVAL (operands[2]) == 8 || INTVAL (operands[2]) == 16
+ 	|| (INTVAL (operands[2]) > 32 && INTVAL (operands[2]) <= 63)))"
+@@ -4642,7 +4696,7 @@
+   [(set (match_operand:DI 0 "nonimmediate_operand" "")
+ 	(ashift:DI (match_operand:DI 1 "general_operand" "")
+ 		     (match_operand 2 "const_int_operand" "")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "
+ {
+   /* ???  This is a named pattern like this is not allowed to FAIL based
+@@ -4676,7 +4730,7 @@
+   [(set (match_operand:SI 0 "register_operand" "=d")
+ 	(ashift:SI (match_operand:SI 1 "register_operand" "0")
+ 		   (match_operand:SI 2 "const_int_operand" "n")))]
+-  "(! TARGET_68020 && !TARGET_5200
++  "(! TARGET_68020 && !TARGET_COLDFIRE
+     && INTVAL (operands[2]) > 16 && INTVAL (operands[2]) <= 24)"
+   "*
+ {
+@@ -4705,28 +4759,28 @@
+   [(set (match_operand:HI 0 "register_operand" "=d")
+ 	(ashift:HI (match_operand:HI 1 "register_operand" "0")
+ 		   (match_operand:HI 2 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "lsl%.w %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "register_operand" "+d"))
+ 	(ashift:HI (match_dup 0)
+ 		   (match_operand:HI 1 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "lsl%.w %1,%0")
+ 
+ (define_insn "ashlqi3"
+   [(set (match_operand:QI 0 "register_operand" "=d")
+ 	(ashift:QI (match_operand:QI 1 "register_operand" "0")
+ 		   (match_operand:QI 2 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "lsl%.b %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "register_operand" "+d"))
+ 	(ashift:QI (match_dup 0)
+ 		   (match_operand:QI 1 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "lsl%.b %1,%0")
+ 
+ ;; On most 68k models, this makes faster code in a special case.
+@@ -4744,7 +4798,7 @@
+   [(set (match_operand:SI 0 "register_operand" "=d")
+ 	(ashiftrt:SI (match_operand:SI 1 "register_operand" "0")
+ 		     (match_operand:SI 2 "const_int_operand" "n")))]
+-  "(! TARGET_68020 && !TARGET_5200
++  "(! TARGET_68020 && !TARGET_COLDFIRE
+     && INTVAL (operands[2]) > 16 && INTVAL (operands[2]) <= 24)"
+   "*
+ {
+@@ -4813,7 +4867,7 @@
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=d")
+ 	(ashiftrt:DI (match_operand:DI 1 "general_operand" "0")
+ 		     (match_operand 2 "const_int_operand" "n")))]
+-  "(!TARGET_5200 
++  "(!TARGET_COLDFIRE 
+     && ((INTVAL (operands[2]) >= 1 && INTVAL (operands[2]) <= 3)
+ 	|| INTVAL (operands[2]) == 8 || INTVAL (operands[2]) == 16
+ 	|| INTVAL (operands[2]) == 31
+@@ -4853,7 +4907,7 @@
+   [(set (match_operand:DI 0 "nonimmediate_operand" "")
+ 	(ashiftrt:DI (match_operand:DI 1 "general_operand" "")
+ 		     (match_operand 2 "const_int_operand" "")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "
+ {
+   /* ???  This is a named pattern like this is not allowed to FAIL based
+@@ -4888,28 +4942,28 @@
+   [(set (match_operand:HI 0 "register_operand" "=d")
+ 	(ashiftrt:HI (match_operand:HI 1 "register_operand" "0")
+ 		     (match_operand:HI 2 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "asr%.w %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "register_operand" "+d"))
+ 	(ashiftrt:HI (match_dup 0)
+ 		     (match_operand:HI 1 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "asr%.w %1,%0")
+ 
+ (define_insn "ashrqi3"
+   [(set (match_operand:QI 0 "register_operand" "=d")
+ 	(ashiftrt:QI (match_operand:QI 1 "register_operand" "0")
+ 		     (match_operand:QI 2 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "asr%.b %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "register_operand" "+d"))
+ 	(ashiftrt:QI (match_dup 0)
+ 		     (match_operand:QI 1 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "asr%.b %1,%0")
+ 
+ ;; logical shift instructions
+@@ -4986,7 +5040,7 @@
+   [(set (match_operand:DI 0 "nonimmediate_operand" "=d")
+ 	(lshiftrt:DI (match_operand:DI 1 "general_operand" "0")
+ 		     (match_operand 2 "const_int_operand" "n")))]
+-  "(!TARGET_5200
++  "(!TARGET_COLDFIRE
+     && ((INTVAL (operands[2]) >= 1 && INTVAL (operands[2]) <= 3)
+ 	 || INTVAL (operands[2]) == 8 || INTVAL (operands[2]) == 16
+ 	 || (INTVAL (operands[2]) > 32 && INTVAL (operands[2]) <= 63)))"
+@@ -5021,7 +5075,7 @@
+   [(set (match_operand:DI 0 "nonimmediate_operand" "")
+ 	(lshiftrt:DI (match_operand:DI 1 "general_operand" "")
+ 		     (match_operand 2 "const_int_operand" "")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "
+ {
+   /* ???  This is a named pattern like this is not allowed to FAIL based
+@@ -5064,7 +5118,7 @@
+   [(set (match_operand:SI 0 "register_operand" "=d")
+ 	(lshiftrt:SI (match_operand:SI 1 "register_operand" "0")
+ 		     (match_operand:SI 2 "const_int_operand" "n")))]
+-  "(! TARGET_68020 && !TARGET_5200
++  "(! TARGET_68020 && !TARGET_COLDFIRE
+     && INTVAL (operands[2]) > 16 && INTVAL (operands[2]) <= 24)"
+   "*
+ {
+@@ -5084,28 +5138,28 @@
+   [(set (match_operand:HI 0 "register_operand" "=d")
+ 	(lshiftrt:HI (match_operand:HI 1 "register_operand" "0")
+ 		     (match_operand:HI 2 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "lsr%.w %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "register_operand" "+d"))
+ 	(lshiftrt:HI (match_dup 0)
+ 		     (match_operand:HI 1 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "lsr%.w %1,%0")
+ 
+ (define_insn "lshrqi3"
+   [(set (match_operand:QI 0 "register_operand" "=d")
+ 	(lshiftrt:QI (match_operand:QI 1 "register_operand" "0")
+ 		     (match_operand:QI 2 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "lsr%.b %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "register_operand" "+d"))
+ 	(lshiftrt:QI (match_dup 0)
+ 		     (match_operand:QI 1 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "lsr%.b %1,%0")
+ 
+ ;; rotate instructions
+@@ -5114,7 +5168,7 @@
+   [(set (match_operand:SI 0 "register_operand" "=d")
+ 	(rotate:SI (match_operand:SI 1 "register_operand" "0")
+ 		   (match_operand:SI 2 "general_operand" "dINO")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[2]) == CONST_INT && INTVAL (operands[2]) == 16)
+@@ -5132,7 +5186,7 @@
+   [(set (match_operand:HI 0 "register_operand" "=d")
+ 	(rotate:HI (match_operand:HI 1 "register_operand" "0")
+ 		   (match_operand:HI 2 "general_operand" "dIP")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[2]) == CONST_INT && INTVAL (operands[2]) >= 8)
+@@ -5148,7 +5202,7 @@
+   [(set (strict_low_part (match_operand:HI 0 "register_operand" "+d"))
+ 	(rotate:HI (match_dup 0)
+ 		   (match_operand:HI 1 "general_operand" "dIP")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[2]) == CONST_INT && INTVAL (operands[2]) >= 8)
+@@ -5164,7 +5218,7 @@
+   [(set (match_operand:QI 0 "register_operand" "=d")
+ 	(rotate:QI (match_operand:QI 1 "register_operand" "0")
+ 		   (match_operand:QI 2 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[2]) == CONST_INT && INTVAL (operands[2]) >= 4)
+@@ -5180,7 +5234,7 @@
+   [(set (strict_low_part (match_operand:QI 0 "register_operand" "+d"))
+ 	(rotate:QI (match_dup 0)
+ 		   (match_operand:QI 1 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   if (GET_CODE (operands[2]) == CONST_INT && INTVAL (operands[2]) >= 4)
+@@ -5196,35 +5250,35 @@
+   [(set (match_operand:SI 0 "register_operand" "=d")
+ 	(rotatert:SI (match_operand:SI 1 "register_operand" "0")
+ 		     (match_operand:SI 2 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "ror%.l %2,%0")
+ 
+ (define_insn "rotrhi3"
+   [(set (match_operand:HI 0 "register_operand" "=d")
+ 	(rotatert:HI (match_operand:HI 1 "register_operand" "0")
+ 		     (match_operand:HI 2 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "ror%.w %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:HI 0 "register_operand" "+d"))
+ 	(rotatert:HI (match_dup 0)
+ 		     (match_operand:HI 1 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "ror%.w %1,%0")
+ 
+ (define_insn "rotrqi3"
+   [(set (match_operand:QI 0 "register_operand" "=d")
+ 	(rotatert:QI (match_operand:QI 1 "register_operand" "0")
+ 		     (match_operand:QI 2 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "ror%.b %2,%0")
+ 
+ (define_insn ""
+   [(set (strict_low_part (match_operand:QI 0 "register_operand" "+d"))
+ 	(rotatert:QI (match_dup 0)
+ 		     (match_operand:QI 1 "general_operand" "dI")))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "ror%.b %1,%0")
+ 
+ 
+@@ -5688,7 +5742,7 @@
+   [(set (match_operand:QI 0 "nonimmediate_operand" "=dm")
+     (match_operator 1 "valid_dbcc_comparison_p"
+       [(match_operand:DI 2 "general_operand" "ro") (const_int 0)]))]
+-  "! TARGET_5200"
++  "! TARGET_COLDFIRE"
+   "*
+ {
+   return output_scc_di (operands[1], operands[2], const0_rtx, operands[0]);
+@@ -5698,7 +5752,7 @@
+   [(set (match_operand:QI 0 "nonimmediate_operand" "=d")
+     (match_operator 1 "valid_dbcc_comparison_p"
+       [(match_operand:DI 2 "general_operand" "ro") (const_int 0)]))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "*
+ {
+   return output_scc_di (operands[1], operands[2], const0_rtx, operands[0]);
+@@ -5709,7 +5763,7 @@
+     (match_operator 1 "valid_dbcc_comparison_p"
+       [(match_operand:DI 2 "general_operand" "ro,r")
+        (match_operand:DI 3 "general_operand" "r,ro")]))]
+-  "! TARGET_5200"
++  "! TARGET_COLDFIRE"
+   "*
+ {
+   return output_scc_di (operands[1], operands[2], operands[3], operands[0]);
+@@ -5720,7 +5774,7 @@
+     (match_operator 1 "valid_dbcc_comparison_p"
+       [(match_operand:DI 2 "general_operand" "ro,r")
+        (match_operand:DI 3 "general_operand" "r,ro")]))]
+-  "TARGET_5200"
++  "TARGET_COLDFIRE"
+   "*
+ {
+   return output_scc_di (operands[1], operands[2], operands[3], operands[0]);
+@@ -6167,7 +6221,7 @@
+ #endif
+     }
+   operands[4] = gen_label_rtx();
+-  if (TARGET_68020 || TARGET_5200)
++  if (TARGET_68020 || TARGET_COLDFIRE)
+     {
+ #ifdef MOTOROLA
+       output_asm_insn (\"tst%.l %0\;jbne %l4\;tst%.l %3\;jbeq %l1\", operands);
+@@ -6246,7 +6300,7 @@
+       return \"move%.l %0,%2\;or%.l %3,%2\;jne %l1\";
+ #endif
+     }
+-  if (TARGET_68020 || TARGET_5200)
++  if (TARGET_68020 || TARGET_COLDFIRE)
+     {
+ #ifdef MOTOROLA
+       return \"tst%.l %0\;jbne %l1\;tst%.l %3\;jbne %l1\";
+@@ -6301,7 +6355,7 @@
+ 	}
+     }
+   CC_STATUS_INIT;
+-  if (TARGET_68020 || TARGET_5200 || ! ADDRESS_REG_P (operands[0]))
++  if (TARGET_68020 || TARGET_COLDFIRE || ! ADDRESS_REG_P (operands[0]))
+     output_asm_insn(\"tst%.l %0\", operands);
+   else
+     {
+@@ -6353,7 +6407,7 @@
+ 	}
+     }
+   CC_STATUS_INIT;
+-  if (TARGET_68020 || TARGET_5200 || ! ADDRESS_REG_P (operands[0]))
++  if (TARGET_68020 || TARGET_COLDFIRE || ! ADDRESS_REG_P (operands[0]))
+     output_asm_insn(\"tst%.l %0\", operands);
+   else
+     {
+@@ -6972,7 +7026,7 @@
+ #else
+ #ifdef SGS
+ #ifdef ASM_OUTPUT_CASE_LABEL
+-  if (TARGET_5200) 
++  if (TARGET_COLDFIRE) 
+     {
+       if (ADDRESS_REG_P (operands[0]))
+ 	return \"jmp 6(%%pc,%0.l)\";
+@@ -6982,7 +7036,7 @@
+   else
+     return \"jmp 6(%%pc,%0.w)\";
+ #else
+-  if (TARGET_5200)
++  if (TARGET_COLDFIRE)
+     {
+       if (ADDRESS_REG_P (operands[0]))
+ 	{
+@@ -7011,7 +7065,7 @@
+     }
+ #endif
+ #else /* not SGS */
+-  if (TARGET_5200)
++  if (TARGET_COLDFIRE)
+     {
+       if (ADDRESS_REG_P (operands[0]))
+ 	{
+@@ -7053,7 +7107,7 @@
+    (set (match_dup 0)
+ 	(plus:HI (match_dup 0)
+ 		 (const_int -1)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -7096,7 +7150,7 @@
+    (set (match_dup 0)
+ 	(plus:SI (match_dup 0)
+ 		 (const_int -1)))]
+-  "!TARGET_5200"
++  "!TARGET_COLDFIRE"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -7143,7 +7197,7 @@
+    (set (match_dup 0)
+ 	(plus:HI (match_dup 0)
+ 		 (const_int -1)))]
+-  "!TARGET_5200 && find_reg_note (insn, REG_NONNEG, 0)"
++  "!TARGET_COLDFIRE && find_reg_note (insn, REG_NONNEG, 0)"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -7202,7 +7256,7 @@
+    (set (match_dup 0)
+ 	(plus:SI (match_dup 0)
+ 		 (const_int -1)))]
+-  "!TARGET_5200 && find_reg_note (insn, REG_NONNEG, 0)"
++  "!TARGET_COLDFIRE && find_reg_note (insn, REG_NONNEG, 0)"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -7563,7 +7617,7 @@
+ #ifndef NO_ADDSUB_Q
+       if (INTVAL (xoperands[1]) <= 8)
+ 	{
+-	  if (!TARGET_5200)
++	  if (!TARGET_COLDFIRE)
+ 	    output_asm_insn (\"addq%.w %1,%0\", xoperands);
+ 	  else
+ 	    output_asm_insn (\"addq%.l %1,%0\", xoperands);
+@@ -7613,7 +7667,7 @@
+ #ifndef NO_ADDSUB_Q
+       if (INTVAL (xoperands[1]) <= 8)
+ 	{
+-	  if (!TARGET_5200)
++	  if (!TARGET_COLDFIRE)
+ 	    output_asm_insn (\"addq%.w %1,%0\", xoperands);
+ 	  else
+ 	    output_asm_insn (\"addq%.l %1,%0\", xoperands);
+@@ -7664,7 +7718,7 @@
+   xoperands[2]
+     = gen_rtx_MEM (QImode, plus_constant (stack_pointer_rtx, 3));
+   xoperands[3] = stack_pointer_rtx;
+-  if (!TARGET_5200)
++  if (!TARGET_COLDFIRE)
+     output_asm_insn (\"subq%.w %#4,%3\;move%.b %1,%2\", xoperands);
+   else
+     output_asm_insn (\"subq%.l %#4,%3\;move%.b %1,%2\", xoperands);
+@@ -7686,7 +7740,7 @@
+ 	      || GET_CODE (operands[0]) == MEM)
+ 	  /* clr insns on 68000 read before writing.
+ 	     This isn't so on the 68010, but we have no TARGET_68010.  */
+-	  && ((TARGET_68020 || TARGET_5200)
++	  && ((TARGET_68020 || TARGET_COLDFIRE)
+ 	      || !(GET_CODE (operands[0]) == MEM
+ 		   && MEM_VOLATILE_P (operands[0]))))
+ 	return \"clr%.w %0\";
+@@ -7726,7 +7780,7 @@
+      (set (match_dup 0)
+ 	  (plus:HI (match_dup 0)
+ 		   (const_int -1)))])]
+-  "!TARGET_5200 && DATA_REG_P (operands[0]) && ! flags_in_68881 ()"
++  "!TARGET_COLDFIRE && DATA_REG_P (operands[0]) && ! flags_in_68881 ()"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -7749,7 +7803,7 @@
+      (set (match_dup 0)
+ 	  (plus:SI (match_dup 0)
+ 		   (const_int -1)))])]
+-  "!TARGET_5200 && DATA_REG_P (operands[0]) && ! flags_in_68881 ()"
++  "!TARGET_COLDFIRE && DATA_REG_P (operands[0]) && ! flags_in_68881 ()"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -7773,7 +7827,7 @@
+      (set (match_dup 0)
+ 	  (plus:HI (match_dup 0)
+ 		   (const_int -1)))])]
+-  "!TARGET_5200 && DATA_REG_P (operands[0]) && ! flags_in_68881 ()"
++  "!TARGET_COLDFIRE && DATA_REG_P (operands[0]) && ! flags_in_68881 ()"
+   "*
+ {
+   CC_STATUS_INIT;
+@@ -7797,7 +7851,7 @@
+      (set (match_dup 0)
+ 	  (plus:SI (match_dup 0)
+ 		   (const_int -1)))])]
+-  "!TARGET_5200 && DATA_REG_P (operands[0]) && ! flags_in_68881 ()"
++  "!TARGET_COLDFIRE && DATA_REG_P (operands[0]) && ! flags_in_68881 ()"
+   "*
+ {
+   CC_STATUS_INIT;
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/m68kelf.h gcc-3.3.1/gcc/config/m68k/m68kelf.h
+--- gcc-3.3.1.orig/gcc/config/m68k/m68kelf.h	2003-01-28 23:18:19.000000000 +0100
++++ gcc-3.3.1/gcc/config/m68k/m68kelf.h	2003-07-25 00:25:30.000000000 +0200
+@@ -75,7 +75,7 @@
+ 
+ #define ASM_RETURN_CASE_JUMP				\
+   do {							\
+-    if (TARGET_5200)					\
++    if (TARGET_COLDFIRE)				\
+       {							\
+ 	if (ADDRESS_REG_P (operands[0]))		\
+ 	  return "jmp %%pc@(2,%0:l)";			\
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/mot3300.h gcc-3.3.1/gcc/config/m68k/mot3300.h
+--- gcc-3.3.1.orig/gcc/config/m68k/mot3300.h	2003-01-28 23:18:19.000000000 +0100
++++ gcc-3.3.1/gcc/config/m68k/mot3300.h	2003-07-25 00:25:30.000000000 +0200
+@@ -439,7 +439,7 @@
+ 
+ #define ASM_RETURN_CASE_JUMP				\
+   do {							\
+-    if (TARGET_5200)					\
++    if (TARGET_COLDFIRE)				\
+       {							\
+ 	if (ADDRESS_REG_P (operands[0]))		\
+ 	  return "jmp 8(%%pc,%0.l)";			\
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/netbsd-elf.h gcc-3.3.1/gcc/config/m68k/netbsd-elf.h
+--- gcc-3.3.1.orig/gcc/config/m68k/netbsd-elf.h	2003-01-28 23:18:19.000000000 +0100
++++ gcc-3.3.1/gcc/config/m68k/netbsd-elf.h	2003-07-25 00:25:30.000000000 +0200
+@@ -217,7 +217,7 @@
+ #undef ASM_OUTPUT_CASE_LABEL
+ #define ASM_RETURN_CASE_JUMP				\
+   do {							\
+-    if (TARGET_5200)					\
++    if (TARGET_COLDFIRE)				\
+       {							\
+ 	if (ADDRESS_REG_P (operands[0]))		\
+ 	  return "jmp %%pc@(2,%0:l)";			\
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/pbb.h gcc-3.3.1/gcc/config/m68k/pbb.h
+--- gcc-3.3.1.orig/gcc/config/m68k/pbb.h	2003-01-28 23:18:20.000000000 +0100
++++ gcc-3.3.1/gcc/config/m68k/pbb.h	2003-07-25 00:25:30.000000000 +0200
+@@ -111,7 +111,7 @@
+ 
+ #define ASM_RETURN_CASE_JUMP				\
+   do {							\
+-    if (TARGET_5200)					\
++    if (TARGET_COLDFIRE)				\
+       {							\
+ 	if (ADDRESS_REG_P (operands[0]))		\
+ 	  return "jmp %%pc@(2,%0:l)";			\
+diff -Nru gcc-3.3.1.orig/gcc/config/m68k/t-m68kelf gcc-3.3.1/gcc/config/m68k/t-m68kelf
+--- gcc-3.3.1.orig/gcc/config/m68k/t-m68kelf	2002-01-24 02:21:48.000000000 +0100
++++ gcc-3.3.1/gcc/config/m68k/t-m68kelf	2003-07-25 00:25:30.000000000 +0200
+@@ -12,11 +12,14 @@
+ 	echo '#define EXTFLOAT' > xfgnulib.c
+ 	cat $(srcdir)/config/m68k/fpgnulib.c >> xfgnulib.c
+ 
+-MULTILIB_OPTIONS = m68000/m68020/m5200/mcpu32/m68040/m68060 m68881/msoft-float
++MULTILIB_OPTIONS = m68000/m68020/m5200/m5206e/m528x/m5307/m5407/mcpu32/m68040/m68060 m68881/msoft-float
+ MULTILIB_DIRNAMES =
+-MULTILIB_MATCHES = m68000=mc68000 m68000=m68302 mcpu32=m68332 m68020=mc68020
+-MULTILIB_EXCEPTIONS = m68000/msoft-float m5200/m68881 m5200/msoft-float mcpu32/m68881 mcpu32/msoft-float m68040/m68881 m68040/msoft-float m68060/m68881 m68060/msoft-float
+-
++MULTILIB_MATCHES = m68000=mc68000 m68000=m68302 mcpu32=m68332 m68020=mc68020 m5206e=m5272
++MULTILIB_EXCEPTIONS = m68000/msoft-float m5200/m68881 m5200/msoft-float \
++		    m5206e/m68881 m5206e/msoft-float m528x/m68881 m528x/msoft-float \
++		    m5307/m68881 m5307/msoft-float m5407/m68881 m5407/msoft-float \
++		    mcpu32/m68881 mcpu32/msoft-float m68040/m68881 m68040/msoft-float \
++		    m68060/m68881 m68060/msoft-float 
+ LIBGCC = stmp-multilib
+ INSTALL_LIBGCC = install-multilib
+ 
+diff -Nru gcc-3.3.1.orig/gcc/longlong.h gcc-3.3.1/gcc/longlong.h
+--- gcc-3.3.1.orig/gcc/longlong.h	2002-10-03 22:39:08.000000000 +0200
++++ gcc-3.3.1/gcc/longlong.h	2003-07-25 00:25:30.000000000 +0200
+@@ -448,7 +448,42 @@
+ 	     "dmi" ((USItype) (d)))
+ 
+ #else /* not mc68020 */
+-#if !defined(__mcf5200__)
++#if defined(__mcoldfire__)
++#define umul_ppmm(xh, xl, a, b) \
++  __asm__ ("| Inlined umul_ppmm\n"					\
++	   "	move%.l	%2,%/d0\n"					\
++	   "	move%.l	%3,%/d1\n"					\
++	   "	move%.l	%/d0,%/d2\n"					\
++	   "	swap	%/d0\n"						\
++	   "	move%.l	%/d1,%/d3\n"					\
++	   "	swap	%/d1\n"						\
++	   "	move%.w	%/d2,%/d4\n"					\
++	   "	mulu	%/d3,%/d4\n"					\
++	   "	mulu	%/d1,%/d2\n"					\
++	   "	mulu	%/d0,%/d3\n"					\
++	   "	mulu	%/d0,%/d1\n"					\
++	   "	move%.l	%/d4,%/d0\n"					\
++	   "	clr%.w	%/d0\n"						\
++	   "	swap	%/d0\n"						\
++	   "	add%.l	%/d0,%/d2\n"					\
++	   "	add%.l	%/d3,%/d2\n"					\
++	   "	jcc	1f\n"						\
++	   "	add%.l	%#65536,%/d1\n"					\
++	   "1:	swap	%/d2\n"						\
++	   "	moveq	%#0,%/d0\n"					\
++	   "	move%.w	%/d2,%/d0\n"					\
++	   "	move%.w	%/d4,%/d2\n"					\
++	   "	move%.l	%/d2,%1\n"					\
++	   "	add%.l	%/d1,%/d0\n"					\
++	   "	move%.l	%/d0,%0"					\
++	   : "=g" ((USItype) (xh)),					\
++	     "=g" ((USItype) (xl))					\
++	   : "g" ((USItype) (a)),					\
++	     "g" ((USItype) (b))					\
++	   : "d0", "d1", "d2", "d3", "d4")
++#define UMUL_TIME 100
++#define UDIV_TIME 400
++#else /* not ColdFire */
+ /* %/ inserts REGISTER_PREFIX, %# inserts IMMEDIATE_PREFIX.  */
+ #define umul_ppmm(xh, xl, a, b) \
+   __asm__ ("| Inlined umul_ppmm\n"					\
+@@ -484,7 +519,7 @@
+ 	   : "d0", "d1", "d2", "d3", "d4")
+ #define UMUL_TIME 100
+ #define UDIV_TIME 400
+-#endif /* not mcf5200 */
++#endif /* not ColdFire */
+ #endif /* not mc68020 */
+ 
+ /* The '020, '030, '040 and '060 have bitfield insns.  */

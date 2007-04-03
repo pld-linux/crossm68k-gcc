@@ -1,0 +1,669 @@
+Applies-to: gcc 3.3.1
+Author: Bernardo Innocenti <bernie@develer.com>
+
+This patch fixes -fomit-frame-pointer on the ColdFire:
+
+ - move ARG_POINTER_REGNUM to a distinct regno, to avoid
+   confusion with FRAME_POINTER_REGNUM in register elimination.
+
+ - Correct computation of frame + saved regs size at function
+   prologue and epilogue output.
+
+
+diff -Nrup gcc-3.3.1-20030720.orig/gcc/config/m68k/3b1.h gcc-3.3.1-20030720/gcc/config/m68k/3b1.h
+--- gcc-3.3.1-20030720.orig/gcc/config/m68k/3b1.h	2002-08-29 23:40:12.000000000 +0200
++++ gcc-3.3.1-20030720/gcc/config/m68k/3b1.h	2003-07-25 01:02:48.000000000 +0200
+@@ -76,7 +76,7 @@ output_file_directive ((FILE), main_inpu
+ #define REGISTER_NAMES \
+ {"%d0", "%d1", "%d2", "%d3", "%d4", "%d5", "%d6", "%d7",	\
+  "%a0", "%a1", "%a2", "%a3", "%a4", "%a5", "%fp", "%sp",	\
+- "%f0", "%f1", "%f2", "%f3", "%f4", "%f5", "%f6", "%f7"}
++ "%f0", "%f1", "%f2", "%f3", "%f4", "%f5", "%f6", "%f7", "argptr" }
+ 
+ /* Specify how to pad function arguments.
+    Value should be `upward', `downward' or `none'.
+diff -Nrup gcc-3.3.1-20030720.orig/gcc/config/m68k/coff.h gcc-3.3.1-20030720/gcc/config/m68k/coff.h
+--- gcc-3.3.1-20030720.orig/gcc/config/m68k/coff.h	2003-07-25 00:28:46.000000000 +0200
++++ gcc-3.3.1-20030720/gcc/config/m68k/coff.h	2003-07-25 01:02:48.000000000 +0200
+@@ -75,7 +75,7 @@ Boston, MA 02111-1307, USA.  */
+ #define REGISTER_NAMES \
+ {"%d0", "%d1", "%d2", "%d3", "%d4", "%d5", "%d6", "%d7",	\
+  "%a0", "%a1", "%a2", "%a3", "%a4", "%a5", "%a6", "%sp",	\
+- "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7" }
++ "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7", "argptr" }
+ #else /* SUPPORTED_SUN_FPA */
+ #define REGISTER_NAMES \
+ {"%d0", "%d1", "%d2", "%d3", "%d4", "%d5", "%d6", "%d7",	\
+@@ -84,7 +84,7 @@ Boston, MA 02111-1307, USA.  */
+  "%fpa0", "%fpa1", "%fpa2", "%fpa3", "%fpa4", "%fpa5", "%fpa6", "%fpa7", \
+  "%fpa8", "%fpa9", "%fpa10", "%fpa11", "%fpa12", "%fpa13", "%fpa14", "%fpa15", \
+  "%fpa16", "%fpa17", "%fpa18", "%fpa19", "%fpa20", "%fpa21", "%fpa22", "%fpa23", \
+- "%fpa24", "%fpa25", "%fpa26", "%fpa27", "%fpa28", "%fpa29", "%fpa30", "%fpa31" }
++ "%fpa24", "%fpa25", "%fpa26", "%fpa27", "%fpa28", "%fpa29", "%fpa30", "%fpa31", "argptr" }
+ #endif /* defined SUPPORT_SUN_FPA */
+ 
+ #undef ASM_FILE_START
+diff -Nrup gcc-3.3.1-20030720.orig/gcc/config/m68k/hp320.h gcc-3.3.1-20030720/gcc/config/m68k/hp320.h
+--- gcc-3.3.1-20030720.orig/gcc/config/m68k/hp320.h	2002-10-16 02:40:33.000000000 +0200
++++ gcc-3.3.1-20030720/gcc/config/m68k/hp320.h	2003-07-25 01:02:48.000000000 +0200
+@@ -183,7 +183,7 @@ Boston, MA 02111-1307, USA.  */
+ #define REGISTER_NAMES \
+ {"%d0", "%d1", "%d2", "%d3", "%d4", "%d5", "%d6", "%d7",	\
+  "%a0", "%a1", "%a2", "%a3", "%a4", "%a5", "%fp", "%sp",	\
+- "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7"}
++ "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7", "argptr"}
+ 
+ #define IMMEDIATE_PREFIX        "&"
+ #define REGISTER_PREFIX         "%"
+diff -Nrup gcc-3.3.1-20030720.orig/gcc/config/m68k/linux.h gcc-3.3.1-20030720/gcc/config/m68k/linux.h
+--- gcc-3.3.1-20030720.orig/gcc/config/m68k/linux.h	2003-07-25 00:28:46.000000000 +0200
++++ gcc-3.3.1-20030720/gcc/config/m68k/linux.h	2003-07-25 01:02:48.000000000 +0200
+@@ -85,7 +85,7 @@ Boston, MA 02111-1307, USA.  */
+ #define REGISTER_NAMES \
+ {"%d0", "%d1", "%d2", "%d3", "%d4", "%d5", "%d6", "%d7", \
+  "%a0", "%a1", "%a2", "%a3", "%a4", "%a5", "%a6", "%sp", \
+- "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7" }
++ "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7", "argptr" }
+ 
+ #else /* SUPPORTED_SUN_FPA */
+ 
+@@ -96,7 +96,7 @@ Boston, MA 02111-1307, USA.  */
+  "%fpa0", "%fpa1", "%fpa2", "%fpa3", "%fpa4", "%fpa5", "%fpa6", "%fpa7", \
+  "%fpa8", "%fpa9", "%fpa10","%fpa11","%fpa12","%fpa13","%fpa14","%fpa15", \
+  "%fpa16","%fpa17","%fpa18","%fpa19","%fpa20","%fpa21","%fpa22","%fpa23", \
+- "%fpa24","%fpa25","%fpa26","%fpa27","%fpa28","%fpa29","%fpa30","%fpa31" }
++ "%fpa24","%fpa25","%fpa26","%fpa27","%fpa28","%fpa29","%fpa30","%fpa31", "argptr" }
+ 
+ #endif /* defined SUPPORT_SUN_FPA */
+ 
+diff -Nrup gcc-3.3.1-20030720.orig/gcc/config/m68k/m68k.c gcc-3.3.1-20030720/gcc/config/m68k/m68k.c
+--- gcc-3.3.1-20030720.orig/gcc/config/m68k/m68k.c	2003-07-25 01:05:08.000000000 +0200
++++ gcc-3.3.1-20030720/gcc/config/m68k/m68k.c	2003-07-25 01:02:48.000000000 +0200
+@@ -43,6 +43,18 @@ Boston, MA 02111-1307, USA.  */
+ /* Needed for use_return_insn.  */
+ #include "flags.h"
+ 
++const enum reg_class regno_reg_class[] =
++{
++  DATA_REGS, DATA_REGS, DATA_REGS, DATA_REGS,
++  DATA_REGS, DATA_REGS, DATA_REGS, DATA_REGS,
++  ADDR_REGS, ADDR_REGS, ADDR_REGS, ADDR_REGS,
++  ADDR_REGS, ADDR_REGS, ADDR_REGS, ADDR_REGS,
++  FP_REGS, FP_REGS, FP_REGS, FP_REGS,
++  FP_REGS, FP_REGS, FP_REGS, FP_REGS,
++  ADDR_REGS
++};
++
++
+ /* Return nonzero if FUNC is an interrupt function as specified by the
+    "interrupt_handler" attribute.  */
+ 
+@@ -503,6 +515,7 @@ m68k_output_function_prologue (stream, s
+   register int mask = 0;
+   int num_saved_regs = 0;
+   HOST_WIDE_INT fsize = (size + 3) & -4;
++  HOST_WIDE_INT fsize_with_regs;
+   HOST_WIDE_INT cfa_offset = INCOMING_FRAME_SP_OFFSET;
+   HOST_WIDE_INT cfa_store_offset = cfa_offset;
+   int interrupt_handler = m68k_interrupt_function_p (current_function_decl);
+@@ -521,6 +534,21 @@ m68k_output_function_prologue (stream, s
+ #endif
+     }
+ 
++  if (TARGET_COLDFIRE)
++    {
++      /* on Coldfire add register save into initial stack frame setup, if possible */
++      for (regno = 0; regno < 16; regno++)
++        if (m68k_save_reg (regno, interrupt_handler))
++          num_saved_regs++;
++
++      if (num_saved_regs <= 2)
++        num_saved_regs = 0;
++    }
++  else
++      num_saved_regs = 0;
++
++  fsize_with_regs = fsize + num_saved_regs * 4;
++  
+   if (frame_pointer_needed)
+     {
+       if (fsize == 0 && TARGET_68040)
+@@ -538,56 +566,35 @@ m68k_output_function_prologue (stream, s
+ 		   reg_names[FRAME_POINTER_REGNUM]);
+ #endif
+ 	}
+-      else if (fsize < 0x8000)
++      else if (fsize_with_regs < 0x8000)
+ 	{
+-    if (TARGET_COLDFIRE)
+-      {
+-        /* on Coldfire add register save into initial stack frame setup, if possible */
+-        for (regno = 0; regno < 16; regno++)
+-          if (m68k_save_reg (regno, interrupt_handler))
+-            num_saved_regs++;
+-
+-        if ( ( fsize + num_saved_regs * 4 >= 0x8000 ) || ( num_saved_regs <= 2 ) )
+-          num_saved_regs = 0;
+ #ifdef MOTOROLA
+-        asm_fprintf (stream, "\tlink.w %s,%0I%d\n",
+-               reg_names[FRAME_POINTER_REGNUM], -fsize - num_saved_regs * 4);
++          asm_fprintf (stream, "\tlink.w %s,%0I%d\n",
++                 reg_names[FRAME_POINTER_REGNUM], -fsize_with_regs);
+ #else
+-        asm_fprintf (stream, "\tlink %s,%0I%d\n",
+-               reg_names[FRAME_POINTER_REGNUM], -fsize - num_saved_regs * 4 );
++          asm_fprintf (stream, "\tlink %s,%0I%d\n",
++                 reg_names[FRAME_POINTER_REGNUM], -fsize_with_regs);
+ #endif
+-        num_saved_regs = 0;
+-      }
+-    else
+-      {
+-#ifdef MOTOROLA
+-	  asm_fprintf (stream, "\tlink.w %s,%0I%d\n",
+-		       reg_names[FRAME_POINTER_REGNUM], -fsize);
+-#else
+-	  asm_fprintf (stream, "\tlink %s,%0I%d\n",
+-		       reg_names[FRAME_POINTER_REGNUM], -fsize);
+-#endif
+-      }
+ 	}
+       else if (TARGET_68020)
+ 	{
+ #ifdef MOTOROLA
+ 	  asm_fprintf (stream, "\tlink.l %s,%0I%d\n",
+-		       reg_names[FRAME_POINTER_REGNUM], -fsize);
++		       reg_names[FRAME_POINTER_REGNUM], -fsize_with_regs);
+ #else
+ 	  asm_fprintf (stream, "\tlink %s,%0I%d\n",
+-		       reg_names[FRAME_POINTER_REGNUM], -fsize);
++		       reg_names[FRAME_POINTER_REGNUM], -fsize_with_regs);
+ #endif
+ 	}
+       else
+ 	{
+-      /* Adding negative number is faster on the 68040.  */
++          /* Adding negative number is faster on the 68040.  */
+ #ifdef MOTOROLA
+ 	  asm_fprintf (stream, "\tlink.w %s,%0I0\n\tadd.l %0I%d,%Rsp\n",
+-		       reg_names[FRAME_POINTER_REGNUM], -fsize);
++		       reg_names[FRAME_POINTER_REGNUM], -fsize_with_regs);
+ #else
+ 	  asm_fprintf (stream, "\tlink %s,%0I0\n\taddl %0I%d,%Rsp\n",
+-		       reg_names[FRAME_POINTER_REGNUM], -fsize);
++		       reg_names[FRAME_POINTER_REGNUM], -fsize_with_regs);
+ #endif
+ 	}
+       if (dwarf2out_do_frame ())
+@@ -601,43 +608,43 @@ m68k_output_function_prologue (stream, s
+ 	  cfa_store_offset += fsize;
+ 	}
+     }
+-  else if (fsize)
++  else if (fsize_with_regs) /* !frame_pointer_needed */
+     {
+-      if (fsize + 4 < 0x8000)
++      if (fsize_with_regs < 0x8000)
+ 	{
+ #ifndef NO_ADDSUB_Q
+-	  if (fsize + 4 <= 8)
++	  if (fsize_with_regs <= 8)
+ 	    {
+ 	      if (!TARGET_COLDFIRE)
+ 		{
+ 		  /* asm_fprintf() cannot handle %.  */
+ #ifdef MOTOROLA
+-		  asm_fprintf (stream, "\tsubq.w %0I%d,%Rsp\n", fsize + 4);
++		  asm_fprintf (stream, "\tsubq.w %0I%d,%Rsp\n", fsize_with_regs);
+ #else
+-		  asm_fprintf (stream, "\tsubqw %0I%d,%Rsp\n", fsize + 4);
++		  asm_fprintf (stream, "\tsubqw %0I%d,%Rsp\n", fsize_with_regs);
+ #endif
+ 		}
+ 	      else
+ 		{
+ 		  /* asm_fprintf() cannot handle %.  */
+ #ifdef MOTOROLA
+-		  asm_fprintf (stream, "\tsubq.l %0I%d,%Rsp\n", fsize + 4);
++		  asm_fprintf (stream, "\tsubq.l %0I%d,%Rsp\n", fsize_with_regs);
+ #else
+-		  asm_fprintf (stream, "\tsubql %0I%d,%Rsp\n", fsize + 4);
++		  asm_fprintf (stream, "\tsubql %0I%d,%Rsp\n", fsize_with_regs);
+ #endif
+ 		}
+ 	    }
+-	  else if (fsize + 4 <= 16 && TARGET_CPU32)
++	  else if (fsize_with_regs <= 16 && TARGET_CPU32)
+ 	    {
+ 	      /* On the CPU32 it is faster to use two subqw instructions to
+ 		 subtract a small integer (8 < N <= 16) to a register.  */
+ 	      /* asm_fprintf() cannot handle %.  */
+ #ifdef MOTOROLA
+ 	      asm_fprintf (stream, "\tsubq.w %0I8,%Rsp\n\tsubq.w %0I%d,%Rsp\n",
+-			   fsize + 4 - 8);
++			   fsize_with_regs - 8);
+ #else
+ 	      asm_fprintf (stream, "\tsubqw %0I8,%Rsp\n\tsubqw %0I%d,%Rsp\n",
+-			   fsize + 4 - 8);
++			   fsize_with_regs - 8);
+ #endif
+ 	    }
+ 	  else 
+@@ -647,27 +654,26 @@ m68k_output_function_prologue (stream, s
+ 	      /* Adding negative number is faster on the 68040.  */
+ 	      /* asm_fprintf() cannot handle %.  */
+ #ifdef MOTOROLA
+-	      asm_fprintf (stream, "\tadd.w %0I%d,%Rsp\n", - (fsize + 4));
++	      asm_fprintf (stream, "\tadd.w %0I%d,%Rsp\n", -fsize_with_regs);
+ #else
+-	      asm_fprintf (stream, "\taddw %0I%d,%Rsp\n", - (fsize + 4));
++	      asm_fprintf (stream, "\taddw %0I%d,%Rsp\n", -fsize_with_regs);
+ #endif
+ 	    }
+ 	  else
+ 	    {
+ #ifdef MOTOROLA
+-	      asm_fprintf (stream, "\tlea (%d,%Rsp),%Rsp\n", - (fsize + 4));
++	      asm_fprintf (stream, "\tlea (%d,%Rsp),%Rsp\n", -fsize_with_regs);
+ #else
+-	      asm_fprintf (stream, "\tlea %Rsp@(%d),%Rsp\n", - (fsize + 4));
++	      asm_fprintf (stream, "\tlea %Rsp@(%d),%Rsp\n", -fsize_with_regs);
+ #endif
+ 	    }
+ 	}
+-      else
++      else /* fsize_with_regs >= 0x8000 */
+ 	{
+-	/* asm_fprintf() cannot handle %.  */
+ #ifdef MOTOROLA
+-	  asm_fprintf (stream, "\tadd.l %0I%d,%Rsp\n", - (fsize + 4));
++	  asm_fprintf (stream, "\tadd.l %0I%d,%Rsp\n", -fsize_with_regs);
+ #else
+-	  asm_fprintf (stream, "\taddl %0I%d,%Rsp\n", - (fsize + 4));
++	  asm_fprintf (stream, "\taddl %0I%d,%Rsp\n", -fsize_with_regs);
+ #endif
+ 	}
+       if (dwarf2out_do_frame ())
+@@ -676,7 +682,11 @@ m68k_output_function_prologue (stream, s
+ 	  cfa_offset = cfa_store_offset;
+ 	  dwarf2out_def_cfa ("", STACK_POINTER_REGNUM, cfa_offset);
+ 	}
+-    }
++
++    } /* !frame_pointer_needed */
++
++  num_saved_regs = 0;
++
+ #ifdef SUPPORT_SUN_FPA
+   for (regno = 24; regno < 56; regno++)
+     if (m68k_save_reg (regno, interrupt_handler))
+@@ -813,9 +823,8 @@ m68k_output_function_prologue (stream, s
+ 	     then use the plain address register indirect mode.  We also
+ 	     have to invert the register save mask to use the new mode.
+ 
+-       The required register save space was combined earlier with
+-       the fsize amount if possible. Check for this and don't add
+-       it again. */
++	     The required register save space was combined earlier with
++	     the fsize amount. Don't add it again. */
+ 	     
+ 	  int newmask = 0;
+ 	  int i;
+@@ -824,14 +833,6 @@ m68k_output_function_prologue (stream, s
+ 	    if (mask & (1 << i))
+ 		newmask |= (1 << (15-i));
+ 
+-    if ( fsize + num_saved_regs * 4 >= 0x8000 )
+-      {
+-#ifdef MOTOROLA
+-	  asm_fprintf (stream, "\tlea (%d,%Rsp),%Rsp\n", -num_saved_regs*4);
+-#else
+-	  asm_fprintf (stream, "\tlea %Rsp@(%d),%Rsp\n", -num_saved_regs*4);
+-#endif
+-      }
+ #ifdef MOTOROLA
+ 	  asm_fprintf (stream, "\tmovm.l %0I0x%x,(%Rsp)\n", newmask);
+ #else
+@@ -1053,6 +1054,7 @@ m68k_output_function_epilogue (stream, s
+   register int nregs;
+   HOST_WIDE_INT offset, foffset, fpoffset;
+   HOST_WIDE_INT fsize = (size + 3) & -4;
++  HOST_WIDE_INT fsize_with_regs;
+   int big = 0;
+   rtx insn = get_last_insn ();
+   int restore_from_sp = 0;
+@@ -1103,18 +1105,45 @@ m68k_output_function_epilogue (stream, s
+      stack adjustment needed at that point.  */
+   restore_from_sp = ! frame_pointer_needed
+ 	     || (! current_function_calls_alloca && leaf_function_p ());
++
++  /* fsize_with_regs is the size we need to adjust the sp when
++     popping the frame */
++  fsize_with_regs = fsize;
++
++  /* Because the ColdFire doesn't support moveml with
++     complex address modes, we must adjust the stack manually
++     after restoring registers. When the frame pointer isn't used,
++     we can merge movem adjustment into frame unlinking
++     made immediately after it. */
++  if (TARGET_COLDFIRE && restore_from_sp && (nregs > 2))
++    fsize_with_regs += nregs * 4;
++
+   if (offset + fsize >= 0x8000
+       && ! restore_from_sp
+       && (mask || fmask || fpoffset))
+     {
++      /* Because the ColdFire doesn't support moveml with
++         complex address modes we make an extra correction here */
++      if (TARGET_COLDFIRE)
++        {
++#ifdef MOTOROLA
++          asm_fprintf (stream, "\t%Omove.l %0I%d,%Ra1\n", -fsize - offset);
++#else
++          asm_fprintf (stream, "\tmovel %0I%d,%Ra1\n", -fsize - offset);
++#endif
++        }
++      else
++        {
+ #ifdef MOTOROLA
+-      asm_fprintf (stream, "\t%Omove.l %0I%d,%Ra1\n", -fsize);
++          asm_fprintf (stream, "\t%Omove.l %0I%d,%Ra1\n", -fsize);
+ #else
+-      asm_fprintf (stream, "\tmovel %0I%d,%Ra1\n", -fsize);
++          asm_fprintf (stream, "\tmovel %0I%d,%Ra1\n", -fsize);
+ #endif
++        }
++
+       fsize = 0, big = 1;
+     }
+-  if (TARGET_COLDFIRE || nregs <= 2)
++  if (nregs <= 2)
+     {
+       /* Restore each separately in the same order moveml does.
+          Using two movel instructions instead of a single moveml
+@@ -1186,12 +1215,9 @@ m68k_output_function_epilogue (stream, s
+             {
+ #ifdef MOTOROLA
+               asm_fprintf (stream, "\tmovm.l (%Rsp),%0I0x%x\n", mask);
+-              asm_fprintf (stream, "\tlea (%d,%Rsp),%Rsp\n", nregs*4);
+ #else
+               asm_fprintf (stream, "\tmoveml %Rsp@,%0I0x%x\n", mask);
+-              asm_fprintf (stream, "\tlea %Rsp@(%d),%Rsp\n", nregs*4);
+ #endif
+-
+             }
+           else
+             {
+@@ -1206,9 +1232,8 @@ m68k_output_function_epilogue (stream, s
+                            offset + fsize, mask);
+ #endif
+ 	    }
+-
+         }
+-      else
++      else /* !TARGET_COLDFIRE */
+         {
+ 	  if (big)
+ 	    {
+@@ -1328,60 +1353,60 @@ m68k_output_function_epilogue (stream, s
+   if (frame_pointer_needed)
+     fprintf (stream, "\tunlk %s\n",
+ 	     reg_names[FRAME_POINTER_REGNUM]);
+-  else if (fsize)
++  else if (fsize_with_regs)
+     {
+ #ifndef NO_ADDSUB_Q
+-      if (fsize + 4 <= 8) 
++      if (fsize_with_regs <= 8)
+ 	{
+ 	  if (!TARGET_COLDFIRE)
+ 	    {
+ #ifdef MOTOROLA
+-	      asm_fprintf (stream, "\taddq.w %0I%d,%Rsp\n", fsize + 4);
++	      asm_fprintf (stream, "\taddq.w %0I%d,%Rsp\n", fsize_with_regs);
+ #else
+-	      asm_fprintf (stream, "\taddqw %0I%d,%Rsp\n", fsize + 4);
++	      asm_fprintf (stream, "\taddqw %0I%d,%Rsp\n", fsize_with_regs);
+ #endif
+ 	    }
+-	  else
++	  else /* TARGET_COLDFIRE */
+ 	    {
+ #ifdef MOTOROLA
+-	      asm_fprintf (stream, "\taddq.l %0I%d,%Rsp\n", fsize + 4);
++	      asm_fprintf (stream, "\taddq.l %0I%d,%Rsp\n", fsize_with_regs);
+ #else
+-	      asm_fprintf (stream, "\taddql %0I%d,%Rsp\n", fsize + 4);
++	      asm_fprintf (stream, "\taddql %0I%d,%Rsp\n", fsize_with_regs);
+ #endif
+ 	    }
+ 	}
+-      else if (fsize + 4 <= 16 && TARGET_CPU32)
++      else if (fsize_with_regs <= 16 && TARGET_CPU32)
+ 	{
+ 	  /* On the CPU32 it is faster to use two addqw instructions to
+ 	     add a small integer (8 < N <= 16) to a register.  */
+ 	  /* asm_fprintf() cannot handle %.  */
+ #ifdef MOTOROLA
+ 	  asm_fprintf (stream, "\taddq.w %0I8,%Rsp\n\taddq.w %0I%d,%Rsp\n",
+-		       fsize + 4 - 8);
++		       fsize_with_regs - 8);
+ #else
+ 	  asm_fprintf (stream, "\taddqw %0I8,%Rsp\n\taddqw %0I%d,%Rsp\n",
+-		       fsize + 4 - 8);
++		       fsize_with_regs - 8);
+ #endif
+ 	}
+       else
+ #endif /* not NO_ADDSUB_Q */
+-      if (fsize + 4 < 0x8000)
++      if (fsize_with_regs < 0x8000)
+ 	{
+ 	  if (TARGET_68040)
+ 	    { 
+ 	      /* asm_fprintf() cannot handle %.  */
+ #ifdef MOTOROLA
+-	      asm_fprintf (stream, "\tadd.w %0I%d,%Rsp\n", fsize + 4);
++	      asm_fprintf (stream, "\tadd.w %0I%d,%Rsp\n", fsize_with_regs);
+ #else
+-	      asm_fprintf (stream, "\taddw %0I%d,%Rsp\n", fsize + 4);
++	      asm_fprintf (stream, "\taddw %0I%d,%Rsp\n", fsize_with_regs);
+ #endif
+ 	    }
+ 	  else
+ 	    {
+ #ifdef MOTOROLA
+-	      asm_fprintf (stream, "\tlea (%d,%Rsp),%Rsp\n", fsize + 4);
++	      asm_fprintf (stream, "\tlea (%d,%Rsp),%Rsp\n", fsize_with_regs);
+ #else
+-	      asm_fprintf (stream, "\tlea %Rsp@(%d),%Rsp\n", fsize + 4);
++	      asm_fprintf (stream, "\tlea %Rsp@(%d),%Rsp\n", fsize_with_regs);
+ #endif
+ 	    }
+ 	}
+@@ -1389,9 +1414,9 @@ m68k_output_function_epilogue (stream, s
+ 	{
+ 	/* asm_fprintf() cannot handle %.  */
+ #ifdef MOTOROLA
+-	  asm_fprintf (stream, "\tadd.l %0I%d,%Rsp\n", fsize + 4);
++	  asm_fprintf (stream, "\tadd.l %0I%d,%Rsp\n", fsize_with_regs);
+ #else
+-	  asm_fprintf (stream, "\taddl %0I%d,%Rsp\n", fsize + 4);
++	  asm_fprintf (stream, "\taddl %0I%d,%Rsp\n", fsize_with_regs);
+ #endif
+ 	}
+     }
+diff -Nrup gcc-3.3.1-20030720.orig/gcc/config/m68k/m68k.h gcc-3.3.1-20030720/gcc/config/m68k/m68k.h
+--- gcc-3.3.1-20030720.orig/gcc/config/m68k/m68k.h	2003-07-25 00:35:34.000000000 +0200
++++ gcc-3.3.1-20030720/gcc/config/m68k/m68k.h	2003-07-25 01:02:48.000000000 +0200
+@@ -441,9 +441,9 @@ extern int target_flags;
+    the address registers numbers 010-017,
+    and the 68881 floating point registers numbers 020-027.  */
+ #ifndef SUPPORT_SUN_FPA
+-#define FIRST_PSEUDO_REGISTER 24
++#define FIRST_PSEUDO_REGISTER 25
+ #else
+-#define FIRST_PSEUDO_REGISTER 56
++#define FIRST_PSEUDO_REGISTER 57
+ #endif
+ 
+ /* This defines the register which is used to hold the offset table for PIC.  */
+@@ -464,7 +464,10 @@ extern int target_flags;
+                                \
+   /* Floating point registers  \
+      (if available).  */       \
+-  0, 0, 0, 0, 0, 0, 0, 0 }
++  0, 0, 0, 0, 0, 0, 0, 0,      \
++                               \
++  /* Arg pointer.  */          \
++  1 }
+ 
+ /* 1 for registers not available across function calls.
+    These must include the FIXED_REGISTERS and also any
+@@ -475,7 +478,7 @@ extern int target_flags;
+ #define CALL_USED_REGISTERS \
+  {1, 1, 0, 0, 0, 0, 0, 0,   \
+   1, 1, 0, 0, 0, 0, 0, 1,   \
+-  1, 1, 0, 0, 0, 0, 0, 0 }
++  1, 1, 0, 0, 0, 0, 0, 0, 1 }
+ 
+ #else /* SUPPORT_SUN_FPA */
+ 
+@@ -497,6 +500,9 @@ extern int target_flags;
+      (if available).  */       \
+   0, 0, 0, 0, 0, 0, 0, 0,      \
+                                \
++  /* Arg pointer.  */          \
++  1,                           \
++                               \
+   /* Sun3 FPA registers.  */   \
+   1, 0, 0, 0, 0, 0, 0, 0,      \
+   0, 0, 0, 0, 0, 0, 0, 0,      \
+@@ -512,7 +518,7 @@ extern int target_flags;
+ #define CALL_USED_REGISTERS \
+  {1, 1, 0, 0, 0, 0, 0, 0, \
+   1, 1, 0, 0, 0, 0, 0, 1, \
+-  1, 1, 0, 0, 0, 0, 0, 0, \
++  1, 1, 0, 0, 0, 0, 0, 0, 1, \
+   /* FPA registers.  */   \
+   1, 1, 1, 1, 0, 0, 0, 0, \
+   0, 0, 0, 0, 0, 0, 0, 0, \
+@@ -658,8 +664,11 @@ extern int target_flags;
+    This is computed in `reload', in reload1.c.  */
+ #define FRAME_POINTER_REQUIRED 0
+ 
+-/* Base register for access to arguments of the function.  */
+-#define ARG_POINTER_REGNUM 14
++/* Base register for access to arguments of the function.
++ * This isn't a hardware register. It will be eliminated to the
++ * stack pointer or frame pointer.
++ */
++#define ARG_POINTER_REGNUM 24
+ 
+ /* Register in which static-chain is passed to a function.  */
+ #define STATIC_CHAIN_REGNUM 8
+@@ -721,12 +727,12 @@ enum reg_class {
+ {					\
+   {0x00000000},  /* NO_REGS */		\
+   {0x000000ff},  /* DATA_REGS */	\
+-  {0x0000ff00},  /* ADDR_REGS */	\
++  {0x0100ff00},  /* ADDR_REGS */	\
+   {0x00ff0000},  /* FP_REGS */		\
+-  {0x0000ffff},  /* GENERAL_REGS */	\
++  {0x0100ffff},  /* GENERAL_REGS */	\
+   {0x00ff00ff},  /* DATA_OR_FP_REGS */	\
+-  {0x00ffff00},  /* ADDR_OR_FP_REGS */	\
+-  {0x00ffffff},  /* ALL_REGS */		\
++  {0x01ffff00},  /* ADDR_OR_FP_REGS */	\
++  {0x01ffffff},  /* ALL_REGS */		\
+ }
+ 
+ /* The same information, inverted:
+@@ -734,7 +740,8 @@ enum reg_class {
+    reg number REGNO.  This could be a conditional expression
+    or could index an array.  */
+ 
+-#define REGNO_REG_CLASS(REGNO) (((REGNO)>>3)+1)
++extern const enum reg_class regno_reg_class[];
++#define REGNO_REG_CLASS(REGNO) (regno_reg_class[(REGNO)])
+ 
+ #else /* defined SUPPORT_SUN_FPA */
+ 
+@@ -1792,7 +1802,7 @@ __transfer_from_trampoline ()					\
+ #define REGISTER_NAMES \
+ {"d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7",	\
+  "a0", "a1", "a2", "a3", "a4", "a5", "a6", "sp",	\
+- "fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7" }
++ "fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "argptr" }
+ 
+ #else /* SUPPORTED_SUN_FPA */
+ 
+diff -Nrup gcc-3.3.1-20030720.orig/gcc/config/m68k/m68kelf.h gcc-3.3.1-20030720/gcc/config/m68k/m68kelf.h
+--- gcc-3.3.1-20030720.orig/gcc/config/m68k/m68kelf.h	2003-07-25 00:28:46.000000000 +0200
++++ gcc-3.3.1-20030720/gcc/config/m68k/m68kelf.h	2003-07-25 01:02:48.000000000 +0200
+@@ -96,7 +96,7 @@ Boston, MA 02111-1307, USA.  */
+ #define REGISTER_NAMES \
+ {"%d0",   "%d1",   "%d2",   "%d3",   "%d4",   "%d5",   "%d6",   "%d7",	     \
+  "%a0",   "%a1",   "%a2",   "%a3",   "%a4",   "%a5",   "%a6",   "%sp",	     \
+- "%fp0",  "%fp1",  "%fp2",  "%fp3",  "%fp4",  "%fp5",  "%fp6",  "%fp7" }
++ "%fp0",  "%fp1",  "%fp2",  "%fp3",  "%fp4",  "%fp5",  "%fp6",  "%fp7", "argptr" }
+ 
+ /* This is how to output an assembler line that says to advance the
+    location counter to a multiple of 2**LOG bytes.  */
+diff -Nrup gcc-3.3.1-20030720.orig/gcc/config/m68k/mot3300.h gcc-3.3.1-20030720/gcc/config/m68k/mot3300.h
+--- gcc-3.3.1-20030720.orig/gcc/config/m68k/mot3300.h	2003-07-25 00:28:46.000000000 +0200
++++ gcc-3.3.1-20030720/gcc/config/m68k/mot3300.h	2003-07-25 01:02:48.000000000 +0200
+@@ -141,7 +141,7 @@ Boston, MA 02111-1307, USA.  */
+ #define REGISTER_NAMES \
+ {"%d0", "%d1", "%d2", "%d3", "%d4", "%d5", "%d6", "%d7",	\
+  "%a0", "%a1", "%a2", "%a3", "%a4", "%a5", "%fp", "%sp",	\
+- "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7"}
++ "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7", "argptr"}
+ 
+ #undef FUNCTION_EXTRA_EPILOGUE
+ #define FUNCTION_EXTRA_EPILOGUE(FILE, SIZE)				\
+diff -Nrup gcc-3.3.1-20030720.orig/gcc/config/m68k/pbb.h gcc-3.3.1-20030720/gcc/config/m68k/pbb.h
+--- gcc-3.3.1-20030720.orig/gcc/config/m68k/pbb.h	2003-07-25 00:28:46.000000000 +0200
++++ gcc-3.3.1-20030720/gcc/config/m68k/pbb.h	2003-07-25 01:02:48.000000000 +0200
+@@ -101,7 +101,7 @@ Boston, MA 02111-1307, USA.  */
+ #define REGISTER_NAMES \
+ {"%d0", "%d1", "%d2", "%d3", "%d4", "%d5", "%d6", "%d7",	\
+  "%a0", "%a1", "%a2", "%a3", "%a4", "%a5", "%a6", "%sp",	\
+- "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7"}
++ "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7", "argptr" }
+ 
+ #undef FUNCTION_EXTRA_EPILOGUE
+ #define FUNCTION_EXTRA_EPILOGUE(FILE, SIZE)				\
+diff -Nrup gcc-3.3.1-20030720.orig/gcc/config/m68k/sgs.h gcc-3.3.1-20030720/gcc/config/m68k/sgs.h
+--- gcc-3.3.1-20030720.orig/gcc/config/m68k/sgs.h	2001-12-20 18:36:36.000000000 +0100
++++ gcc-3.3.1-20030720/gcc/config/m68k/sgs.h	2003-07-25 01:02:48.000000000 +0200
+@@ -84,7 +84,7 @@ Boston, MA 02111-1307, USA.  */
+ #define REGISTER_NAMES \
+ {"%d0",   "%d1",   "%d2",   "%d3",   "%d4",   "%d5",   "%d6",   "%d7",	     \
+  "%a0",   "%a1",   "%a2",   "%a3",   "%a4",   "%a5",   "%fp",   "%sp",	     \
+- "%fp0",  "%fp1",  "%fp2",  "%fp3",  "%fp4",  "%fp5",  "%fp6",  "%fp7" }
++ "%fp0",  "%fp1",  "%fp2",  "%fp3",  "%fp4",  "%fp5",  "%fp6",  "%fp7", "argptr" }
+ 
+ #else /* SUPPORTED_SUN_FPA */
+ 
+@@ -95,7 +95,7 @@ Boston, MA 02111-1307, USA.  */
+  "%fpa0", "%fpa1", "%fpa2", "%fpa3", "%fpa4", "%fpa5", "%fpa6","%fpa7",	     \
+  "%fpa8", "%fpa9", "%fpa10","%fpa11","%fpa12","%fpa13","%fpa14","%fpa15",    \
+  "%fpa16","%fpa17","%fpa18","%fpa19","%fpa20","%fpa21","%fpa22","%fpa23",    \
+- "%fpa24","%fpa25","%fpa26","%fpa27","%fpa28","%fpa29","%fpa30","%fpa31" }
++ "%fpa24","%fpa25","%fpa26","%fpa27","%fpa28","%fpa29","%fpa30","%fpa31", "argptr" }
+ 
+ #endif /* defined SUPPORT_SUN_FPA */
+ 
+diff -Nrup gcc-3.3.1-20030720.orig/gcc/config/m68k/tower.h gcc-3.3.1-20030720/gcc/config/m68k/tower.h
+--- gcc-3.3.1-20030720.orig/gcc/config/m68k/tower.h	2001-11-19 19:30:03.000000000 +0100
++++ gcc-3.3.1-20030720/gcc/config/m68k/tower.h	2003-07-25 01:02:48.000000000 +0200
+@@ -88,7 +88,7 @@ Boston, MA 02111-1307, USA.  */
+ #define REGISTER_NAMES \
+ {"%d0", "%d1", "%d2", "%d3", "%d4", "%d5", "%d6", "%d7",                      \
+  "%a0", "%a1", "%a2", "%a3", "%a4", "%a5", "%a6", "%sp",                      \
+- "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7"}
++ "%fp0", "%fp1", "%fp2", "%fp3", "%fp4", "%fp5", "%fp6", "%fp7", "argptr" }
+ 
+ #undef REGISTER_PREFIX
+ #define REGISTER_PREFIX "%"
